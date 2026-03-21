@@ -60,6 +60,7 @@ source "${SCRIPT_DIR}/lib/data-fetch.sh"
 # ═══════════════════════════════════════════════════════════════
 handle_new_issue() {
     log "Triaging issue (plan-only mode)..."
+    detect_label_tools  # Check for label-based tool extensions before set_label strips them
     set_label "agent:triage"
     check_circuit_breaker
     ensure_repo
@@ -152,6 +153,7 @@ ${plan_content}
 # ═══════════════════════════════════════════════════════════════
 handle_issue_reply() {
     log "Human replied. Checking if questions are answered..."
+    detect_label_tools  # Check for label-based tool extensions
     check_circuit_breaker
     ensure_repo
 
@@ -218,6 +220,7 @@ ${questions}" 2>/dev/null || true
 # ═══════════════════════════════════════════════════════════════
 handle_implement() {
     log "Starting implementation of approved plan..."
+    detect_label_tools  # Check for label-based tool extensions before set_label strips them
     set_label "agent:in-progress"
     check_circuit_breaker
     ensure_repo
@@ -315,6 +318,9 @@ handle_pr_review() {
     # Extract issue number from branch name (agent/issue-N)
     local issue_num
     issue_num=$(echo "$branch" | grep -oP 'issue-\K\d+' || echo "$pr_number")
+
+    # Check label-based tool extensions from the linked issue
+    detect_label_tools "$issue_num"
 
     # Update label on the linked issue
     NUMBER="$issue_num"

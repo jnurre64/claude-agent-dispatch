@@ -60,11 +60,44 @@ $(cat "$AGENT_MEMORY_FILE")"
     fi
 }
 
-# ─── Extra tools (project-specific) ─────────────────────────────
+# ─── Label-based tool detection ──────────────────────────────────
+# Checks issue labels and appends tools based on AGENT_LABEL_TOOLS_* config.
+# Must be called BEFORE set_label() strips modifier labels.
+# Sets LABEL_EXTRA_TOOLS global with any matched tools.
+LABEL_EXTRA_TOOLS=""
+
+detect_label_tools() {
+    local issue_num="${1:-$NUMBER}"
+    local labels
+    labels=$(gh issue view "$issue_num" --repo "$REPO" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
+    LABEL_EXTRA_TOOLS=""
+
+    while IFS= read -r label; do
+        [ -z "$label" ] && continue
+        # Sanitize label name: colons and hyphens become underscores
+        local sanitized
+        sanitized=$(echo "$label" | tr ':' '_' | tr '-' '_')
+        local var_name="AGENT_LABEL_TOOLS_${sanitized}"
+        local tools="${!var_name:-}"
+        if [ -n "$tools" ]; then
+            log "Label '$label' adds tools: $tools"
+            if [ -n "$LABEL_EXTRA_TOOLS" ]; then
+                LABEL_EXTRA_TOOLS="${LABEL_EXTRA_TOOLS},${tools}"
+            else
+                LABEL_EXTRA_TOOLS="$tools"
+            fi
+        fi
+    done <<< "$labels"
+}
+
+# ─── Extra tools (project-specific + label-based) ───────────────
 get_implementation_tools() {
     local tools="$AGENT_ALLOWED_TOOLS_IMPLEMENT"
     if [ -n "$AGENT_EXTRA_TOOLS" ]; then
         tools="${tools},${AGENT_EXTRA_TOOLS}"
+    fi
+    if [ -n "$LABEL_EXTRA_TOOLS" ]; then
+        tools="${tools},${LABEL_EXTRA_TOOLS}"
     fi
     echo "$tools"
 }

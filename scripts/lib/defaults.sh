@@ -45,5 +45,13 @@ AGENT_PROMPT_IMPLEMENT="${AGENT_PROMPT_IMPLEMENT:-}"
 AGENT_PROMPT_REPLY="${AGENT_PROMPT_REPLY:-}"
 AGENT_PROMPT_REVIEW="${AGENT_PROMPT_REVIEW:-}"
 
+# ─── Label-to-tool mapping ────────────────────────────────────────
+# Map issue labels to extra tools that get added when the label is present.
+# Format: AGENT_LABEL_TOOLS_<sanitized_label>="tool1,tool2"
+# Label names are sanitized: colons become underscores, hyphens become underscores.
+# Example: for label "agent:image-gen", set:
+#   AGENT_LABEL_TOOLS_agent_image_gen="Bash(curl *localhost:8188*),Bash(python3:*)"
+# These tools are appended to the implementation toolset when the label is detected.
+
 # ─── Paths ───────────────────────────────────────────────────────
 AGENT_LOG_DIR="${AGENT_LOG_DIR:-$HOME/.claude/agent-logs}"
