@@ -25,8 +25,8 @@ AGENT_TEST_COMMAND="${AGENT_TEST_COMMAND:-}"
 AGENT_EFFORT_LEVEL="${AGENT_EFFORT_LEVEL:-high}"
 
 # ─── Tool permissions ────────────────────────────────────────────
-# Triage/reply: read-only by default
-AGENT_ALLOWED_TOOLS_TRIAGE="${AGENT_ALLOWED_TOOLS_TRIAGE:-Read,Grep,Glob,Bash(echo:*),Bash(cat:*),Bash(ls:*),Bash(find:*)}"
+# Triage/reply: read-only + Write (needed to output plan file to .agent-data/)
+AGENT_ALLOWED_TOOLS_TRIAGE="${AGENT_ALLOWED_TOOLS_TRIAGE:-Read,Write,Grep,Glob,Bash(echo:*),Bash(cat:*),Bash(ls:*),Bash(find:*)}"
 
 # Implementation/review: read-write by default
 AGENT_ALLOWED_TOOLS_IMPLEMENT="${AGENT_ALLOWED_TOOLS_IMPLEMENT:-Read,Edit,Write,Grep,Glob,Bash(git add:*),Bash(git commit:*),Bash(git status),Bash(git diff:*),Bash(git log:*),Bash(ls:*),Bash(cat:*),Bash(grep:*),Bash(find:*),Bash(mkdir:*)}"
