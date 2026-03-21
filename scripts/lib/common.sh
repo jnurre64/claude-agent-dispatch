@@ -104,17 +104,30 @@ get_implementation_tools() {
 
 # ─── Load prompt from file or use default ────────────────────────
 # Usage: load_prompt "triage" "$AGENT_PROMPT_TRIAGE"
-# Falls back to prompts/<name>.md in the repo root.
+# Resolves relative paths against CONFIG_DIR (where config.env lives).
+# Falls back to prompts/<name>.md relative to the scripts directory.
 load_prompt() {
     local prompt_name="$1"
     local custom_path="$2"
+    local resolved_path=""
 
-    if [ -n "$custom_path" ] && [ -f "$custom_path" ]; then
-        cat "$custom_path"
+    # Resolve the custom path (relative paths resolved against CONFIG_DIR)
+    if [ -n "$custom_path" ]; then
+        if [[ "$custom_path" = /* ]]; then
+            resolved_path="$custom_path"
+        elif [ -n "${CONFIG_DIR:-}" ]; then
+            resolved_path="${CONFIG_DIR}/${custom_path}"
+        else
+            resolved_path="$custom_path"
+        fi
+    fi
+
+    if [ -n "$resolved_path" ] && [ -f "$resolved_path" ]; then
+        cat "$resolved_path"
     elif [ -f "${SCRIPT_DIR}/../prompts/${prompt_name}.md" ]; then
         cat "${SCRIPT_DIR}/../prompts/${prompt_name}.md"
     else
-        log "ERROR: No prompt found for '${prompt_name}' (checked custom path and ${SCRIPT_DIR}/../prompts/${prompt_name}.md)"
+        log "ERROR: No prompt found for '${prompt_name}' (checked '${resolved_path:-<not set>}' and ${SCRIPT_DIR}/../prompts/${prompt_name}.md)"
         exit 1
     fi
 }

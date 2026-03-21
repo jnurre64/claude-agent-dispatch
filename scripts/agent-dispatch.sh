@@ -24,6 +24,9 @@ AGENT_CONFIG="${AGENT_CONFIG:-$HOME/agent-infra/config.env}"
 if [ -f "$AGENT_CONFIG" ]; then
     # shellcheck source=/dev/null
     source "$AGENT_CONFIG"
+    # Resolve config directory for relative prompt paths
+    CONFIG_DIR="$(cd "$(dirname "$AGENT_CONFIG")" && pwd)"
+    export CONFIG_DIR
 fi
 
 # Source defaults (fills in anything not set by config.env)
