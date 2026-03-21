@@ -1,0 +1,215 @@
+#!/bin/bash
+# ─── Common functions: logging, labels, circuit breaker, memory, claude runner ──
+
+# ─── Logging ─────────────────────────────────────────────────────
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$EVENT_TYPE] #$NUMBER: $*" | tee -a "$AGENT_LOG_DIR/agent-dispatch.log"
+}
+
+# ─── Label state machine ────────────────────────────────────────
+ALL_AGENT_LABELS=(
+    agent
+    agent:triage
+    agent:needs-info
+    agent:ready
+    agent:in-progress
+    agent:pr-open
+    agent:revision
+    agent:failed
+    agent:plan-review
+    agent:plan-approved
+)
+
+remove_all_agent_labels() {
+    for label in "${ALL_AGENT_LABELS[@]}"; do
+        gh issue edit "$NUMBER" --repo "$REPO" --remove-label "$label" 2>/dev/null || true
+    done
+}
+
+set_label() {
+    remove_all_agent_labels
+    gh issue edit "$NUMBER" --repo "$REPO" --add-label "$1" 2>/dev/null || true
+}
+
+# ─── Circuit breaker ────────────────────────────────────────────
+check_circuit_breaker() {
+    local one_hour_ago
+    one_hour_ago=$(date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ')
+    local recent_bot_comments
+    recent_bot_comments=$(gh api "/repos/${REPO}/issues/${NUMBER}/comments?since=${one_hour_ago}" \
+        --jq "[.[] | select(.user.login == \"${AGENT_BOT_USER}\")] | length" 2>/dev/null || echo "0")
+
+    if [ "$recent_bot_comments" -ge "$AGENT_CIRCUIT_BREAKER_LIMIT" ]; then
+        log "CIRCUIT BREAKER: ${recent_bot_comments} bot comments in the last hour. Halting."
+        set_label "agent:failed"
+        gh issue comment "$NUMBER" --repo "$REPO" \
+            --body "Agent halted: too many comments in the last hour. This may indicate a loop. Please investigate and re-label with \`agent\` to retry." 2>/dev/null || true
+        exit 1
+    fi
+}
+
+# ─── Shared project memory ──────────────────────────────────────
+load_shared_memory() {
+    if [ -n "$AGENT_MEMORY_FILE" ] && [ -f "$AGENT_MEMORY_FILE" ]; then
+        echo "# Shared Project Memory (from interactive sessions)
+The following memory was accumulated from working on this project. Use it for context but do NOT attempt to update memory files — only interactive sessions manage memory.
+
+$(cat "$AGENT_MEMORY_FILE")"
+    else
+        echo ""
+    fi
+}
+
+# ─── Extra tools (project-specific) ─────────────────────────────
+get_implementation_tools() {
+    local tools="$AGENT_ALLOWED_TOOLS_IMPLEMENT"
+    if [ -n "$AGENT_EXTRA_TOOLS" ]; then
+        tools="${tools},${AGENT_EXTRA_TOOLS}"
+    fi
+    echo "$tools"
+}
+
+# ─── Load prompt from file or use default ────────────────────────
+# Usage: load_prompt "triage" "$AGENT_PROMPT_TRIAGE"
+# Falls back to prompts/<name>.md in the repo root.
+load_prompt() {
+    local prompt_name="$1"
+    local custom_path="$2"
+
+    if [ -n "$custom_path" ] && [ -f "$custom_path" ]; then
+        cat "$custom_path"
+    elif [ -f "${SCRIPT_DIR}/../prompts/${prompt_name}.md" ]; then
+        cat "${SCRIPT_DIR}/../prompts/${prompt_name}.md"
+    else
+        log "ERROR: No prompt found for '${prompt_name}' (checked custom path and ${SCRIPT_DIR}/../prompts/${prompt_name}.md)"
+        exit 1
+    fi
+}
+
+# ─── Run Claude and capture structured output ────────────────────
+run_claude() {
+    local prompt="$1"
+    local allowed_tools="${2:-$AGENT_ALLOWED_TOOLS_IMPLEMENT}"
+    local memory
+    memory=$(load_shared_memory)
+
+    cd "$WORKTREE_DIR"
+    local stderr_log="$AGENT_LOG_DIR/claude-stderr-${REPO_NAME}-${NUMBER}-${TIMESTAMP}.log"
+    local claude_args=(
+        -p "$prompt"
+        --allowedTools "$allowed_tools"
+        --disallowedTools "$AGENT_DISALLOWED_TOOLS"
+        --max-turns "$AGENT_MAX_TURNS"
+        --output-format json
+    )
+    if [ -n "$memory" ]; then
+        claude_args+=(--append-system-prompt "$memory")
+    fi
+
+    timeout "$AGENT_TIMEOUT" claude "${claude_args[@]}" 2>"$stderr_log" || {
+        local exit_code=$?
+        log "Claude exited with code $exit_code. Stderr: $(head -20 "$stderr_log")"
+        echo '{"result":"Claude timed out or errored (exit code '"$exit_code"')","error":true}'
+    }
+}
+
+# ─── Parse Claude JSON output ────────────────────────────────────
+# Extracts the text result from claude's --output-format json response.
+parse_claude_output() {
+    local result="$1"
+    local claude_output
+    claude_output=$(echo "$result" | jq -r '.result // .result_text // empty' 2>/dev/null)
+    if [ -z "$claude_output" ]; then
+        claude_output=$(echo "$result" | jq -r '.subtype // empty' 2>/dev/null)
+        [ -n "$claude_output" ] && claude_output="Agent stopped: $claude_output"
+    fi
+    if [ -z "$claude_output" ]; then
+        claude_output="$result"
+    fi
+    echo "$claude_output"
+}
+
+# ─── Check for new commits and handle push/PR ────────────────────
+# Usage: handle_post_implementation "$start_sha" "$issue_title" "$claude_output"
+handle_post_implementation() {
+    local start_sha="$1"
+    local issue_title="$2"
+    local claude_output="$3"
+
+    local commit_count
+    if [ -n "$start_sha" ]; then
+        commit_count=$(git -C "$WORKTREE_DIR" rev-list --count "${start_sha}..HEAD" 2>/dev/null || echo "0")
+    else
+        commit_count=$(git -C "$WORKTREE_DIR" rev-list --count "origin/main..HEAD" 2>/dev/null || echo "0")
+    fi
+
+    if [ "$commit_count" -gt 0 ]; then
+        # ── Pre-PR test gate ──────────────────────────────────────
+        if [ -n "$AGENT_TEST_COMMAND" ]; then
+            log "Running pre-PR test gate ($commit_count commits)..."
+            local test_output test_exit
+            set +e
+            test_output=$(cd "$WORKTREE_DIR" && eval "$AGENT_TEST_COMMAND" 2>&1)
+            test_exit=$?
+            set -e
+
+            if [ "$test_exit" -ne 0 ]; then
+                log "Pre-PR test gate FAILED (exit code $test_exit)."
+                gh issue comment "$NUMBER" --repo "$REPO" \
+                    --body "## Test Failure (Pre-PR Gate)
+
+Tests failed after implementation. Setting \`agent:failed\`.
+
+<details><summary>Test output (last 100 lines)</summary>
+
+\`\`\`
+$(echo "$test_output" | tail -100)
+\`\`\`
+</details>" 2>/dev/null || true
+                set_label "agent:failed"
+                return 1
+            fi
+        fi
+
+        log "Pushing $commit_count commit(s)..."
+        git -C "$WORKTREE_DIR" push -u origin "$BRANCH_NAME" 2>/dev/null
+
+        # Create PR
+        local pr_url
+        pr_url=$(gh pr create --repo "$REPO" \
+            --head "$BRANCH_NAME" \
+            --title "Agent: ${issue_title}" \
+            --body "## Automated PR for #${NUMBER}
+
+This PR was created by the Claude Code agent.
+
+### Summary
+${claude_output:0:2000}
+
+---
+Please review carefully. The agent will address review feedback automatically.
+
+Closes #${NUMBER}" 2>/dev/null || echo "FAILED")
+
+        if [ "$pr_url" != "FAILED" ]; then
+            log "PR created: $pr_url"
+            set_label "agent:pr-open"
+        else
+            log "Failed to create PR."
+            set_label "agent:failed"
+            gh issue comment "$NUMBER" --repo "$REPO" \
+                --body "Agent completed implementation but failed to create a PR. Please check the \`${BRANCH_NAME}\` branch." 2>/dev/null || true
+        fi
+    else
+        log "No commits made. Marking as failed."
+        set_label "agent:failed"
+        gh issue comment "$NUMBER" --repo "$REPO" \
+            --body "Agent attempted implementation but made no changes. This issue may need more context or may be too complex. Re-label with \`agent\` to retry.
+
+Agent output:
+\`\`\`
+${claude_output:0:1000}
+\`\`\`" 2>/dev/null || true
+        return 1
+    fi
+}

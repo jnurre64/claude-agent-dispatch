@@ -1,0 +1,10 @@
+agent|1D76DB|Triggers agent triage on this issue
+agent:triage|FBCA04|Agent is analyzing the issue
+agent:needs-info|D93F0B|Agent asked questions, waiting for human reply
+agent:ready|0E8A16|Questions answered, ready to proceed
+agent:plan-review|D4C5F9|Agent posted a plan, awaiting human approval
+agent:plan-approved|0E8A16|Human approved the plan, ready to implement
+agent:in-progress|FBCA04|Agent is implementing changes
+agent:pr-open|1D76DB|Agent created a PR, awaiting review
+agent:revision|FBCA04|Agent is addressing PR review feedback
+agent:failed|B60205|Agent encountered an error and stopped
