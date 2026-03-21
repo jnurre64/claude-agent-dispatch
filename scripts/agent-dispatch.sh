@@ -238,8 +238,10 @@ handle_implement() {
         setup_worktree
     fi
 
+    # Compare against origin/main (not HEAD) to detect ALL implementation commits,
+    # including ones from previous failed runs that were retried on the same worktree.
     local start_sha
-    start_sha=$(git -C "$WORKTREE_DIR" rev-parse HEAD 2>/dev/null || echo "")
+    start_sha=$(git -C "$WORKTREE_DIR" rev-parse origin/main 2>/dev/null || echo "")
 
     # Fetch issue details
     local issue_json
