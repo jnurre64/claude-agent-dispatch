@@ -98,7 +98,9 @@ Embed colors by event type:
 
 **`scripts/lib/common.sh`:**
 - Source `notify.sh`
-- Add `notify()` calls at each milestone
+
+**`scripts/agent-dispatch.sh` and `scripts/lib/common.sh`:**
+- Add `notify()` calls at each milestone (most handlers are in `agent-dispatch.sh`; `handle_post_implementation` is in `common.sh`)
 
 **`scripts/lib/defaults.sh`:**
 - New config vars with empty defaults (feature disabled unless configured)
@@ -283,7 +285,7 @@ claude-agent-dispatch/
     future-channels.md             # NEW - Phase 3 roadmap documentation
   config.env.example               # UPDATED - new notification vars
   tests/
-    notify.bats                    # NEW - Phase 1 tests
+    test_notify.bats               # NEW - Phase 1 tests
 ```
 
 ## Testing Strategy
