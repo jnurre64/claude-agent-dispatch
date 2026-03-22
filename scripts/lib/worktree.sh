@@ -39,4 +39,3 @@ setup_worktree() {
 cleanup_worktree() {
     git -C "$REPO_DIR" worktree remove "$WORKTREE_DIR" --force 2>/dev/null || true
 }
-# Test change for update verification
