@@ -119,6 +119,7 @@ The system adapts to any project through:
 | [Bot Account](docs/bot-account.md) | Creating and configuring the bot GitHub account |
 | [Runners](docs/runners.md) | Self-hosted runner setup |
 | [Security](docs/security.md) | Threat model, safety mechanisms, security checklist |
+| [Testing](docs/testing.md) | BATS test suite — 52 tests, regression coverage, writing new tests |
 | [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
 
 ## How This Differs from claude-code-action
