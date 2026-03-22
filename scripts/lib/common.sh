@@ -219,10 +219,12 @@ $(echo "$test_output" | tail -100)
 \`\`\`
 </details>" 2>/dev/null || true
                 set_label "agent:failed"
+                notify "tests_failed" "$issue_title" "https://github.com/${REPO}/issues/${NUMBER}" "Pre-PR test gate failed (exit code $test_exit)"
                 return 1
             fi
         fi
 
+        notify "tests_passed" "$issue_title" "https://github.com/${REPO}/issues/${NUMBER}" "Pre-PR tests passed ($commit_count commits)"
         log "Pushing $commit_count commit(s)..."
         git -C "$WORKTREE_DIR" push -u origin "$BRANCH_NAME" 2>/dev/null
 
@@ -253,16 +255,19 @@ Closes #${NUMBER}"
 
         if [ "$pr_url" != "FAILED" ]; then
             log "PR created: $pr_url"
+            notify "pr_created" "$issue_title" "$pr_url" "PR created with $commit_count commit(s)"
             set_label "agent:pr-open"
         else
             log "Failed to create PR."
             set_label "agent:failed"
+            notify "agent_failed" "$issue_title" "https://github.com/${REPO}/issues/${NUMBER}" "Implementation complete but PR creation failed"
             gh issue comment "$NUMBER" --repo "$REPO" \
                 --body "Agent completed implementation but failed to create a PR. Please check the \`${BRANCH_NAME}\` branch." 2>/dev/null || true
         fi
     else
         log "No commits made. Marking as failed."
         set_label "agent:failed"
+        notify "agent_failed" "$issue_title" "https://github.com/${REPO}/issues/${NUMBER}" "No commits made during implementation"
         gh issue comment "$NUMBER" --repo "$REPO" \
             --body "Agent attempted implementation but made no changes. This issue may need more context or may be too complex. Re-label with \`agent\` to retry.
 

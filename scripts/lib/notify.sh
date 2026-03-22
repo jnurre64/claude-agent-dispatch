@@ -1,0 +1,173 @@
+#!/bin/bash
+# ─── Notification layer (optional) ─────────────────────────────────
+# Sends notifications at dispatch milestones to configured platforms.
+# Currently supports Discord webhooks. Slack and Telegram planned.
+# Silently no-ops if no platform is configured.
+
+# ─── Notification level check ──────────────────────────────────────
+# Returns 0 (true) if the event should be sent at the current level.
+_notify_should_send() {
+    local event_type="$1"
+    local level="${AGENT_NOTIFY_LEVEL:-actionable}"
+
+    case "$level" in
+        all)
+            return 0
+            ;;
+        actionable)
+            case "$event_type" in
+                plan_posted|questions_asked|pr_created|review_feedback|agent_failed)
+                    return 0 ;;
+                *)
+                    return 1 ;;
+            esac
+            ;;
+        failures)
+            case "$event_type" in
+                tests_failed|agent_failed)
+                    return 0 ;;
+                *)
+                    return 1 ;;
+            esac
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+}
+
+# ─── Event metadata ────────────────────────────────────────────────
+_notify_event_color() {
+    case "$1" in
+        pr_created|tests_passed)     echo "5763719"  ;;  # green
+        tests_failed|agent_failed)   echo "15548997" ;;  # red
+        plan_posted|questions_asked) echo "3447003"  ;;  # blue
+        review_feedback)             echo "16776960" ;;  # yellow
+        *)                           echo "9807270"  ;;  # grey
+    esac
+}
+
+_notify_event_label() {
+    case "$1" in
+        plan_posted)        echo "Plan Ready"             ;;
+        questions_asked)    echo "Questions"              ;;
+        implement_started)  echo "Implementation Started" ;;
+        tests_passed)       echo "Tests Passed"           ;;
+        tests_failed)       echo "Tests Failed"           ;;
+        pr_created)         echo "PR Created"             ;;
+        review_feedback)    echo "Review Feedback"        ;;
+        agent_failed)       echo "Agent Failed"           ;;
+        *)                  echo "Agent Update"           ;;
+    esac
+}
+
+_notify_event_indicator() {
+    case "$1" in
+        pr_created|tests_passed)     echo "[OK]"     ;;
+        tests_failed|agent_failed)   echo "[FAIL]"   ;;
+        plan_posted|questions_asked) echo "[INFO]"   ;;
+        review_feedback)             echo "[ACTION]" ;;
+        implement_started)           echo "[INFO]"   ;;
+        *)                           echo "[INFO]"   ;;
+    esac
+}
+
+# ─── Build Discord embed JSON ──────────────────────────────────────
+# Usage: _notify_build_discord_embed <event_type> <title> <url> <description>
+_notify_build_discord_embed() {
+    local event_type="$1"
+    local title="$2"
+    local url="$3"
+    local description="$4"
+
+    local color label indicator
+    color=$(_notify_event_color "$event_type")
+    label=$(_notify_event_label "$event_type")
+    indicator=$(_notify_event_indicator "$event_type")
+
+    # Truncate description to fit Discord embed limit (4096 chars, leave room for indicator)
+    if [ "${#description}" -gt 4000 ]; then
+        description="${description:0:3997}..."
+    fi
+
+    local embed_title="${indicator} ${label} -- #${NUMBER}: ${title}"
+
+    # Build JSON with jq for proper escaping
+    jq -n \
+        --arg username "Agent Dispatch" \
+        --arg title "$embed_title" \
+        --arg url "$url" \
+        --arg description "$description" \
+        --argjson color "$color" \
+        --arg footer "Automated by claude-agent-dispatch | ${REPO:-unknown} #${NUMBER:-0}" \
+        --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '{
+            username: $username,
+            embeds: [{
+                title: $title,
+                url: $url,
+                description: $description,
+                color: $color,
+                footer: { text: $footer },
+                timestamp: $timestamp
+            }]
+        }'
+}
+
+# ─── Send to Discord webhook ──────────────────────────────────────
+# Usage: _notify_send_discord <json_payload>
+_notify_send_discord() {
+    local json="$1"
+    local webhook_url="${AGENT_NOTIFY_DISCORD_WEBHOOK}"
+
+    # Append thread_id query parameter if configured
+    if [ -n "${AGENT_NOTIFY_DISCORD_THREAD_ID:-}" ]; then
+        webhook_url="${webhook_url}?thread_id=${AGENT_NOTIFY_DISCORD_THREAD_ID}"
+    fi
+
+    curl -s -o /dev/null -X POST "$webhook_url" \
+        -H "Content-Type: application/json" \
+        -d "$json" 2>/dev/null || true
+}
+
+# ─── Main notification function ────────────────────────────────────
+# Usage: notify <event_type> <title> <url> [description]
+#
+# Event types: plan_posted, questions_asked, implement_started,
+#              tests_passed, tests_failed, pr_created,
+#              review_feedback, agent_failed
+notify() {
+    local event_type="${1:-}"
+    local title="${2:-}"
+    local url="${3:-}"
+    local description="${4:-}"
+
+    # No-op if no platform is configured
+    if [ -z "${AGENT_NOTIFY_DISCORD_WEBHOOK:-}" ]; then
+        return 0
+    fi
+
+    # Check notification level filter
+    _notify_should_send "$event_type" || return 0
+
+    # ── Discord ──
+    if [ -n "${AGENT_NOTIFY_DISCORD_WEBHOOK:-}" ]; then
+        local discord_json
+        discord_json=$(_notify_build_discord_embed "$event_type" "$title" "$url" "$description")
+        _notify_send_discord "$discord_json"
+    fi
+
+    # ── Slack (future) ──
+    # if [ -n "${AGENT_NOTIFY_SLACK_WEBHOOK:-}" ]; then
+    #     local slack_json
+    #     slack_json=$(_notify_build_slack_payload "$event_type" "$title" "$url" "$description")
+    #     _notify_send_slack "$slack_json"
+    # fi
+
+    # ── Telegram (future) ──
+    # if [ -n "${AGENT_NOTIFY_TELEGRAM_TOKEN:-}" ]; then
+    #     local telegram_json
+    #     telegram_json=$(_notify_build_telegram_payload "$event_type" "$title" "$url" "$description")
+    #     _notify_send_telegram "$telegram_json"
+    # fi
+}
