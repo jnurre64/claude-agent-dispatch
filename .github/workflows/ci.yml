@@ -28,3 +28,14 @@ jobs:
           shellcheck scripts/create-labels.sh
           shellcheck scripts/setup.sh
           shellcheck scripts/update.sh
+
+  bats:
+    name: BATS Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Run BATS tests
+        run: ./tests/bats/bin/bats tests/
