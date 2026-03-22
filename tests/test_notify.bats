@@ -124,7 +124,7 @@ _source_notify() {
 @test "notify embed: plan_posted has blue color (3447003) and correct title" {
     _source_notify
 
-    run _notify_build_embed "plan_posted" "Add sprite caching" "https://github.com/org/repo/issues/42" "Plan summary here"
+    run _notify_build_discord_embed "plan_posted" "Add sprite caching" "https://github.com/org/repo/issues/42" "Plan summary here"
     assert_success
 
     local color title
@@ -137,7 +137,7 @@ _source_notify() {
 @test "notify embed: tests_failed has red color (15548997)" {
     _source_notify
 
-    run _notify_build_embed "tests_failed" "Fix login bug" "https://github.com/org/repo/issues/5" "npm test exited 1"
+    run _notify_build_discord_embed "tests_failed" "Fix login bug" "https://github.com/org/repo/issues/5" "npm test exited 1"
     assert_success
 
     local color
@@ -148,7 +148,7 @@ _source_notify() {
 @test "notify embed: pr_created has green color (5763719)" {
     _source_notify
 
-    run _notify_build_embed "pr_created" "Add feature X" "https://github.com/org/repo/pull/87" "3 commits"
+    run _notify_build_discord_embed "pr_created" "Add feature X" "https://github.com/org/repo/pull/87" "3 commits"
     assert_success
 
     local color
@@ -159,7 +159,7 @@ _source_notify() {
 @test "notify embed: review_feedback has yellow color (16776960)" {
     _source_notify
 
-    run _notify_build_embed "review_feedback" "PR #87" "https://github.com/org/repo/pull/87" "Changes requested"
+    run _notify_build_discord_embed "review_feedback" "PR #87" "https://github.com/org/repo/pull/87" "Changes requested"
     assert_success
 
     local color
@@ -170,7 +170,7 @@ _source_notify() {
 @test "notify embed: includes footer with automation disclosure" {
     _source_notify
 
-    run _notify_build_embed "plan_posted" "Issue title" "https://example.com" "desc"
+    run _notify_build_discord_embed "plan_posted" "Issue title" "https://example.com" "desc"
     assert_success
 
     local footer
@@ -181,7 +181,7 @@ _source_notify() {
 @test "notify embed: includes issue URL in field" {
     _source_notify
 
-    run _notify_build_embed "plan_posted" "Issue title" "https://github.com/org/repo/issues/42" "desc"
+    run _notify_build_discord_embed "plan_posted" "Issue title" "https://github.com/org/repo/issues/42" "desc"
     assert_success
 
     echo "$output" | jq -e '.embeds[0]' | grep -q "https://github.com/org/repo/issues/42"
@@ -193,7 +193,7 @@ _source_notify() {
     local long_desc
     long_desc=$(printf 'x%.0s' {1..5000})
 
-    run _notify_build_embed "plan_posted" "Issue title" "https://example.com" "$long_desc"
+    run _notify_build_discord_embed "plan_posted" "Issue title" "https://example.com" "$long_desc"
     assert_success
 
     local desc_len
@@ -204,7 +204,7 @@ _source_notify() {
 @test "notify embed: uses webhook username 'Agent Dispatch'" {
     _source_notify
 
-    run _notify_build_embed "plan_posted" "Issue title" "https://example.com" "desc"
+    run _notify_build_discord_embed "plan_posted" "Issue title" "https://example.com" "desc"
     assert_success
 
     local username

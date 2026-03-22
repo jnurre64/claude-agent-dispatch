@@ -1,7 +1,8 @@
 #!/bin/bash
-# ─── Discord notification layer (optional) ─────────────────────────
-# Sends Discord webhook notifications at dispatch milestones.
-# Silently no-ops if AGENT_NOTIFY_DISCORD_WEBHOOK is not configured.
+# ─── Notification layer (optional) ─────────────────────────────────
+# Sends notifications at dispatch milestones to configured platforms.
+# Currently supports Discord webhooks. Slack and Telegram planned.
+# Silently no-ops if no platform is configured.
 
 # ─── Notification level check ──────────────────────────────────────
 # Returns 0 (true) if the event should be sent at the current level.
@@ -72,8 +73,8 @@ _notify_event_indicator() {
 }
 
 # ─── Build Discord embed JSON ──────────────────────────────────────
-# Usage: _notify_build_embed <event_type> <title> <url> <description>
-_notify_build_embed() {
+# Usage: _notify_build_discord_embed <event_type> <title> <url> <description>
+_notify_build_discord_embed() {
     local event_type="$1"
     local title="$2"
     local url="$3"
@@ -114,8 +115,8 @@ _notify_build_embed() {
 }
 
 # ─── Send to Discord webhook ──────────────────────────────────────
-# Usage: _notify_send <json_payload>
-_notify_send() {
+# Usage: _notify_send_discord <json_payload>
+_notify_send_discord() {
     local json="$1"
     local webhook_url="${AGENT_NOTIFY_DISCORD_WEBHOOK}"
 
@@ -141,14 +142,32 @@ notify() {
     local url="${3:-}"
     local description="${4:-}"
 
-    # No-op if webhook not configured
-    [ -z "${AGENT_NOTIFY_DISCORD_WEBHOOK:-}" ] && return 0
+    # No-op if no platform is configured
+    if [ -z "${AGENT_NOTIFY_DISCORD_WEBHOOK:-}" ]; then
+        return 0
+    fi
 
     # Check notification level filter
     _notify_should_send "$event_type" || return 0
 
-    local json
-    json=$(_notify_build_embed "$event_type" "$title" "$url" "$description")
+    # ── Discord ──
+    if [ -n "${AGENT_NOTIFY_DISCORD_WEBHOOK:-}" ]; then
+        local discord_json
+        discord_json=$(_notify_build_discord_embed "$event_type" "$title" "$url" "$description")
+        _notify_send_discord "$discord_json"
+    fi
 
-    _notify_send "$json"
+    # ── Slack (future) ──
+    # if [ -n "${AGENT_NOTIFY_SLACK_WEBHOOK:-}" ]; then
+    #     local slack_json
+    #     slack_json=$(_notify_build_slack_payload "$event_type" "$title" "$url" "$description")
+    #     _notify_send_slack "$slack_json"
+    # fi
+
+    # ── Telegram (future) ──
+    # if [ -n "${AGENT_NOTIFY_TELEGRAM_TOKEN:-}" ]; then
+    #     local telegram_json
+    #     telegram_json=$(_notify_build_telegram_payload "$event_type" "$title" "$url" "$description")
+    #     _notify_send_telegram "$telegram_json"
+    # fi
 }
