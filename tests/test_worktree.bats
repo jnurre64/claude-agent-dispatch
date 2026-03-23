@@ -34,3 +34,35 @@ load 'helpers/test_helper'
 @test "worktree.sh: cleanup_worktree uses --force" {
     grep -q "worktree remove.*--force" "${LIB_DIR}/worktree.sh"
 }
+
+@test "worktree.sh: defines run_worktree_setup function" {
+    source "${LIB_DIR}/common.sh"
+    source "${LIB_DIR}/worktree.sh"
+    declare -f run_worktree_setup > /dev/null
+}
+
+@test "worktree.sh: run_worktree_setup runs AGENT_TEST_SETUP_COMMAND when set" {
+    source "${LIB_DIR}/common.sh"
+    source "${LIB_DIR}/worktree.sh"
+    export AGENT_TEST_SETUP_COMMAND="echo setup_ran"
+    export WORKTREE_DIR="$TEST_TEMP_DIR/worktree"
+
+    run run_worktree_setup
+    assert_success
+    assert_output --partial "setup_ran"
+}
+
+@test "worktree.sh: run_worktree_setup no-ops when AGENT_TEST_SETUP_COMMAND is empty" {
+    source "${LIB_DIR}/common.sh"
+    source "${LIB_DIR}/worktree.sh"
+    export AGENT_TEST_SETUP_COMMAND=""
+    export WORKTREE_DIR="$TEST_TEMP_DIR/worktree"
+
+    run run_worktree_setup
+    assert_success
+    assert_output ""
+}
+
+@test "worktree.sh: setup_worktree calls run_worktree_setup" {
+    grep -q "run_worktree_setup" "${LIB_DIR}/worktree.sh"
+}

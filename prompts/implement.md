@@ -53,7 +53,9 @@ Review your changes against coding standards:
 ### Step 5: Final Verification
 Run the full test suite:
 $AGENT_TEST_COMMAND
-- If tests fail, investigate and fix (up to 2 retries).
+- If tests fail with missing resources, classes, or import errors, run the setup command first:
+  $AGENT_TEST_SETUP_COMMAND
+- If tests still fail, investigate and fix (up to 2 retries).
 - Do NOT proceed if tests are still failing.
 
 ### Step 6: Commit

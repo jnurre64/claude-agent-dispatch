@@ -33,6 +33,17 @@ setup_worktree() {
     else
         git -C "$REPO_DIR" worktree add "$WORKTREE_DIR" -b "$BRANCH_NAME" origin/main
     fi
+
+    run_worktree_setup
+}
+
+# Run project-specific setup in the worktree (e.g., Godot import, npm install).
+# Called after worktree creation to ensure the environment is ready for tests.
+run_worktree_setup() {
+    if [ -n "${AGENT_TEST_SETUP_COMMAND:-}" ]; then
+        log "Running worktree setup: $AGENT_TEST_SETUP_COMMAND"
+        (cd "$WORKTREE_DIR" && eval "$AGENT_TEST_SETUP_COMMAND") 2>&1 || log "WARN: Worktree setup command exited with non-zero (continuing)"
+    fi
 }
 
 # Remove the worktree for the current issue/PR.

@@ -249,6 +249,7 @@ handle_implement() {
         log "Reusing existing worktree at $WORKTREE_DIR"
         git -C "$WORKTREE_DIR" fetch origin main 2>/dev/null || true
         git -C "$WORKTREE_DIR" merge origin/main --no-edit 2>/dev/null || true
+        run_worktree_setup
     else
         log "No existing worktree found. Creating fresh one."
         setup_worktree
@@ -396,6 +397,7 @@ handle_pr_review() {
     git -C "$REPO_DIR" worktree prune 2>/dev/null || true
     git -C "$REPO_DIR" fetch origin "$branch" 2>/dev/null || true
     git -C "$REPO_DIR" worktree add "$WORKTREE_DIR" -B "$branch" "origin/$branch"
+    run_worktree_setup
 
     local start_sha
     start_sha=$(git -C "$WORKTREE_DIR" rev-parse HEAD 2>/dev/null || echo "")

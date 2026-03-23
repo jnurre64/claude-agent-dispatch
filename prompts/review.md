@@ -46,7 +46,9 @@ pre-fetched and saved to local files you can read:
    - Performance: no unnecessary allocations in hot paths
 7. MANDATORY: Run the full test suite BEFORE committing:
    $AGENT_TEST_COMMAND
-   - If tests fail, investigate and fix the failures.
+   - If tests fail with missing resources, classes, or import errors, run the setup command first:
+     $AGENT_TEST_SETUP_COMMAND
+   - If tests still fail, investigate and fix the failures.
    - Re-run the tests after fixing. You may retry up to 2 times.
    - Do NOT commit if tests are still failing. Report what failed instead.
 8. Only after tests pass: make a separate commit for each logical fix, with a clear message.
