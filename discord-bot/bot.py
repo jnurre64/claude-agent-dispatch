@@ -53,7 +53,7 @@ def is_authorized_check(
 
 # --- Event metadata ---
 EVENT_COLORS = {
-    "pr_created": 0x57F287, "tests_passed": 0x57F287,
+    "pr_created": 0x57F287, "tests_passed": 0x57F287, "review_pushed": 0x57F287,
     "tests_failed": 0xED4245, "agent_failed": 0xED4245,
     "plan_posted": 0x3498DB, "questions_asked": 0x3498DB,
     "review_feedback": 0xFFFF00,
@@ -64,11 +64,12 @@ EVENT_LABELS = {
     "implement_started": "Implementation Started",
     "tests_passed": "Tests Passed", "tests_failed": "Tests Failed",
     "pr_created": "PR Created", "review_feedback": "Review Feedback",
+    "review_pushed": "Review Fixes Pushed",
     "agent_failed": "Agent Failed",
 }
 
 EVENT_INDICATORS = {
-    "pr_created": "[OK]", "tests_passed": "[OK]",
+    "pr_created": "[OK]", "tests_passed": "[OK]", "review_pushed": "[OK]",
     "tests_failed": "[FAIL]", "agent_failed": "[FAIL]",
     "plan_posted": "[INFO]", "questions_asked": "[INFO]",
     "review_feedback": "[ACTION]", "implement_started": "[INFO]",

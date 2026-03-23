@@ -60,6 +60,15 @@ _source_notify() {
     assert_failure
 }
 
+@test "notify level 'actionable': sends review_pushed" {
+    export AGENT_NOTIFY_DISCORD_WEBHOOK="https://discord.com/api/webhooks/test/token"
+    export AGENT_NOTIFY_LEVEL="actionable"
+    _source_notify
+
+    run _notify_should_send "review_pushed"
+    assert_success
+}
+
 @test "notify level 'actionable': sends agent_failed" {
     export AGENT_NOTIFY_DISCORD_WEBHOOK="https://discord.com/api/webhooks/test/token"
     export AGENT_NOTIFY_LEVEL="actionable"

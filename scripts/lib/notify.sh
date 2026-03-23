@@ -16,7 +16,7 @@ _notify_should_send() {
             ;;
         actionable)
             case "$event_type" in
-                plan_posted|questions_asked|pr_created|review_feedback|agent_failed)
+                plan_posted|questions_asked|pr_created|review_feedback|review_pushed|agent_failed)
                     return 0 ;;
                 *)
                     return 1 ;;
@@ -39,7 +39,7 @@ _notify_should_send() {
 # ─── Event metadata ────────────────────────────────────────────────
 _notify_event_color() {
     case "$1" in
-        pr_created|tests_passed)     echo "5763719"  ;;  # green
+        pr_created|tests_passed|review_pushed) echo "5763719"  ;;  # green
         tests_failed|agent_failed)   echo "15548997" ;;  # red
         plan_posted|questions_asked) echo "3447003"  ;;  # blue
         review_feedback)             echo "16776960" ;;  # yellow
@@ -55,6 +55,7 @@ _notify_event_label() {
         tests_passed)       echo "Tests Passed"           ;;
         tests_failed)       echo "Tests Failed"           ;;
         pr_created)         echo "PR Created"             ;;
+        review_pushed)      echo "Review Fixes Pushed"     ;;
         review_feedback)    echo "Review Feedback"        ;;
         agent_failed)       echo "Agent Failed"           ;;
         *)                  echo "Agent Update"           ;;
@@ -63,7 +64,7 @@ _notify_event_label() {
 
 _notify_event_indicator() {
     case "$1" in
-        pr_created|tests_passed)     echo "[OK]"     ;;
+        pr_created|tests_passed|review_pushed) echo "[OK]"     ;;
         tests_failed|agent_failed)   echo "[FAIL]"   ;;
         plan_posted|questions_asked) echo "[INFO]"   ;;
         review_feedback)             echo "[ACTION]" ;;

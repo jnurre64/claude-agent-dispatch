@@ -450,6 +450,7 @@ handle_pr_review() {
     if [ "$new_commits" -gt 0 ]; then
         git -C "$WORKTREE_DIR" push origin "$branch" 2>&1 | tee -a "$AGENT_LOG_DIR/agent-dispatch.log" || true
         gh issue edit "$issue_num" --repo "$REPO" --remove-label "agent:revision" --add-label "agent:pr-open" 2>/dev/null || true
+        notify "review_pushed" "$pr_title" "https://github.com/${REPO}/pull/${pr_number}" "Pushed $new_commits review fix commit(s)"
         log "Pushed $new_commits review fix commit(s)."
     else
         gh pr comment "$pr_number" --repo "$REPO" \
@@ -458,6 +459,7 @@ handle_pr_review() {
 ${claude_output:0:2000}
 
 You may need to provide more specific guidance or handle this manually." 2>/dev/null || true
+        notify "agent_failed" "$pr_title" "https://github.com/${REPO}/pull/${pr_number}" "No commits made for review feedback"
         log "No commits made for review feedback."
     fi
 
