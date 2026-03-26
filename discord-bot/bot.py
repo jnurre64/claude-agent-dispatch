@@ -121,19 +121,19 @@ def build_buttons(event_type: str, issue_number: int, url: str) -> discord.ui.Vi
     return view
 
 
-def gh_command(args: list[str]) -> str:
-    """Execute a gh CLI command and return stdout."""
+def gh_command(args: list[str]) -> tuple[bool, str]:
+    """Execute a gh CLI command and return (success, output)."""
     try:
         result = subprocess.run(
             ["gh"] + args, capture_output=True, text=True, timeout=30
         )
         if result.returncode != 0:
             log.warning("gh %s failed: %s", " ".join(args[:3]), result.stderr.strip())
-            return result.stderr.strip()
-        return result.stdout.strip()
+            return False, result.stderr.strip()
+        return True, result.stdout.strip()
     except subprocess.TimeoutExpired:
         log.error("gh command timed out: %s", " ".join(args[:3]))
-        return "Error: command timed out"
+        return False, "Error: command timed out"
 
 
 _ALL_AGENT_LABELS = [
@@ -164,7 +164,12 @@ class FeedbackModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=True)
         text = sanitize_input(self.feedback.value)
-        gh_command(["issue", "comment", str(self.issue_number), "--repo", self.repo, "--body", text])
+        ok, err = gh_command(["issue", "comment", str(self.issue_number), "--repo", self.repo, "--body", text])
+        if not ok:
+            await interaction.followup.send(
+                f"Failed to comment on #{self.issue_number}: {err}", ephemeral=True
+            )
+            return
 
         if interaction.message and interaction.message.embeds:
             action_label = "Changes requested" if self.action == "changes" else "Comment"
@@ -202,19 +207,25 @@ async def handle_button_interaction(interaction: discord.Interaction) -> None:
     await interaction.response.defer(ephemeral=True)
 
     if action == "approve":
-        gh_command([
+        ok, err = gh_command([
             "issue", "edit", str(issue_number), "--repo", REPO,
             "--remove-label", "agent:plan-review", "--add-label", "agent:plan-approved",
         ])
         status_text = f"Approved by {interaction.user.display_name}"
     elif action == "retry":
-        gh_command([
+        ok, err = gh_command([
             "issue", "edit", str(issue_number), "--repo", REPO,
             "--remove-label", ",".join(_ALL_AGENT_LABELS), "--add-label", "agent",
         ])
         status_text = f"Retried by {interaction.user.display_name}"
     else:
         await interaction.followup.send("Unknown action.", ephemeral=True)
+        return
+
+    if not ok:
+        await interaction.followup.send(
+            f"Failed to update GitHub issue #{issue_number}: {err}", ephemeral=True
+        )
         return
 
     embed = interaction.message.embeds[0] if interaction.message.embeds else discord.Embed()
@@ -238,10 +249,13 @@ def register_slash_commands(tree: app_commands.CommandTree) -> None:
         if not _check_slash_auth(interaction):
             return await interaction.response.send_message("Permission denied.", ephemeral=True)
         await interaction.response.defer(ephemeral=True)
-        gh_command([
+        ok, err = gh_command([
             "issue", "edit", str(issue), "--repo", REPO,
             "--remove-label", "agent:plan-review", "--add-label", "agent:plan-approved",
         ])
+        if not ok:
+            await interaction.followup.send(f"Failed to update #{issue}: {err}", ephemeral=True)
+            return
         await interaction.followup.send(f"Plan for #{issue} approved.", ephemeral=True)
         log.info("SLASH: /approve #%d by %s", issue, interaction.user)
 
@@ -252,8 +266,14 @@ def register_slash_commands(tree: app_commands.CommandTree) -> None:
             return await interaction.response.send_message("Permission denied.", ephemeral=True)
         await interaction.response.defer(ephemeral=True)
         body = sanitize_input(reason) if reason else "Plan rejected via Discord."
-        gh_command(["issue", "comment", str(issue), "--repo", REPO, "--body", body])
-        gh_command(["issue", "edit", str(issue), "--repo", REPO, "--add-label", "agent:failed"])
+        ok, err = gh_command(["issue", "comment", str(issue), "--repo", REPO, "--body", body])
+        if not ok:
+            await interaction.followup.send(f"Failed to comment on #{issue}: {err}", ephemeral=True)
+            return
+        ok, err = gh_command(["issue", "edit", str(issue), "--repo", REPO, "--add-label", "agent:failed"])
+        if not ok:
+            await interaction.followup.send(f"Failed to label #{issue}: {err}", ephemeral=True)
+            return
         await interaction.followup.send(f"Plan for #{issue} rejected.", ephemeral=True)
         log.info("SLASH: /reject #%d by %s", issue, interaction.user)
 
@@ -263,7 +283,10 @@ def register_slash_commands(tree: app_commands.CommandTree) -> None:
         if not _check_slash_auth(interaction):
             return await interaction.response.send_message("Permission denied.", ephemeral=True)
         await interaction.response.defer(ephemeral=True)
-        gh_command(["issue", "comment", str(issue), "--repo", REPO, "--body", sanitize_input(text)])
+        ok, err = gh_command(["issue", "comment", str(issue), "--repo", REPO, "--body", sanitize_input(text)])
+        if not ok:
+            await interaction.followup.send(f"Failed to comment on #{issue}: {err}", ephemeral=True)
+            return
         await interaction.followup.send(f"Comment posted on #{issue}.", ephemeral=True)
         log.info("SLASH: /comment #%d by %s", issue, interaction.user)
 
@@ -273,8 +296,11 @@ def register_slash_commands(tree: app_commands.CommandTree) -> None:
         if not _check_slash_auth(interaction):
             return await interaction.response.send_message("Permission denied.", ephemeral=True)
         await interaction.response.defer(ephemeral=True)
-        labels = gh_command(["issue", "view", str(issue), "--repo", REPO, "--json", "labels", "--jq", ".labels[].name"])
-        agent_labels = [l for l in labels.split("\n") if l.startswith("agent")]
+        ok, output = gh_command(["issue", "view", str(issue), "--repo", REPO, "--json", "labels", "--jq", ".labels[].name"])
+        if not ok:
+            await interaction.followup.send(f"Failed to fetch #{issue}: {output}", ephemeral=True)
+            return
+        agent_labels = [l for l in output.split("\n") if l.startswith("agent")]
         status = ", ".join(agent_labels) if agent_labels else "No agent labels"
         await interaction.followup.send(f"#{issue} status: {status}", ephemeral=True)
 
@@ -284,10 +310,13 @@ def register_slash_commands(tree: app_commands.CommandTree) -> None:
         if not _check_slash_auth(interaction):
             return await interaction.response.send_message("Permission denied.", ephemeral=True)
         await interaction.response.defer(ephemeral=True)
-        gh_command([
+        ok, err = gh_command([
             "issue", "edit", str(issue), "--repo", REPO,
             "--remove-label", ",".join(_ALL_AGENT_LABELS), "--add-label", "agent",
         ])
+        if not ok:
+            await interaction.followup.send(f"Failed to update #{issue}: {err}", ephemeral=True)
+            return
         await interaction.followup.send(f"Agent re-triggered on #{issue}.", ephemeral=True)
         log.info("SLASH: /retry #%d by %s", issue, interaction.user)
 

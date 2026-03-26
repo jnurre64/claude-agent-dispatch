@@ -25,21 +25,25 @@ class TestGhCommand:
         assert "42" in args
 
     @patch("bot.subprocess.run")
-    def test_returns_stdout_stripped(self, mock_run):
+    def test_returns_success_tuple_with_stripped_stdout(self, mock_run):
         mock_run.return_value = MagicMock(stdout="  result  \n", returncode=0)
-        assert gh_command(["issue", "view", "1"]) == "result"
+        ok, output = gh_command(["issue", "view", "1"])
+        assert ok is True
+        assert output == "result"
 
     @patch("bot.subprocess.run")
     def test_handles_timeout(self, mock_run):
         mock_run.side_effect = subprocess.TimeoutExpired(cmd="gh", timeout=30)
-        result = gh_command(["issue", "view", "1"])
-        assert "timed out" in result.lower()
+        ok, output = gh_command(["issue", "view", "1"])
+        assert ok is False
+        assert "timed out" in output.lower()
 
     @patch("bot.subprocess.run")
     def test_handles_error(self, mock_run):
         mock_run.return_value = MagicMock(stdout="", stderr="not found", returncode=1)
-        result = gh_command(["issue", "view", "999"])
-        assert isinstance(result, str)
+        ok, output = gh_command(["issue", "view", "999"])
+        assert ok is False
+        assert output == "not found"
 
 
 def _mock_interaction(custom_id: str, user_id: str = "123", role_ids=None, display_name: str = "jonny"):
@@ -62,7 +66,7 @@ class TestHandleButtonInteraction:
     @patch("bot.gh_command")
     @pytest.mark.asyncio
     async def test_approve_adds_label(self, mock_gh):
-        mock_gh.return_value = ""
+        mock_gh.return_value = (True, "")
         interaction = _mock_interaction("approve:42", user_id="123")
         with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.REPO", "org/repo"):
             await handle_button_interaction(interaction)
@@ -73,11 +77,24 @@ class TestHandleButtonInteraction:
     @patch("bot.gh_command")
     @pytest.mark.asyncio
     async def test_approve_sends_ephemeral_confirmation(self, mock_gh):
-        mock_gh.return_value = ""
+        mock_gh.return_value = (True, "")
         interaction = _mock_interaction("approve:42", user_id="123")
         with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.REPO", "org/repo"):
             await handle_button_interaction(interaction)
         interaction.followup.send.assert_called_once()
+
+    @patch("bot.gh_command")
+    @pytest.mark.asyncio
+    async def test_approve_failure_reports_error(self, mock_gh):
+        mock_gh.return_value = (False, "gh auth login required")
+        interaction = _mock_interaction("approve:42", user_id="123")
+        with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.REPO", "org/repo"):
+            await handle_button_interaction(interaction)
+        interaction.followup.send.assert_called_once()
+        msg = interaction.followup.send.call_args[0][0]
+        assert "Failed" in msg
+        # Embed should NOT be updated on failure
+        interaction.message.edit.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_unauthorized_user_rejected(self):
@@ -91,7 +108,7 @@ class TestHandleButtonInteraction:
     @patch("bot.gh_command")
     @pytest.mark.asyncio
     async def test_retry_resets_labels(self, mock_gh):
-        mock_gh.return_value = ""
+        mock_gh.return_value = (True, "")
         interaction = _mock_interaction("retry:42", user_id="123")
         with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.REPO", "org/repo"):
             await handle_button_interaction(interaction)
