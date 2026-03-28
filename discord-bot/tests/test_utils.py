@@ -33,33 +33,39 @@ class TestSanitizeInput:
 
 class TestParseCustomId:
     def test_approve(self):
-        action, issue = parse_custom_id("approve:42")
+        action, repo, issue = parse_custom_id("approve:org/repo:42")
         assert action == "approve"
+        assert repo == "org/repo"
         assert issue == 42
 
     def test_changes(self):
-        action, issue = parse_custom_id("changes:7")
+        action, repo, issue = parse_custom_id("changes:org/repo:7")
         assert action == "changes"
+        assert repo == "org/repo"
         assert issue == 7
 
     def test_comment(self):
-        action, issue = parse_custom_id("comment:123")
+        action, repo, issue = parse_custom_id("comment:org/repo:123")
         assert action == "comment"
+        assert repo == "org/repo"
         assert issue == 123
 
     def test_retry(self):
-        action, issue = parse_custom_id("retry:1")
+        action, repo, issue = parse_custom_id("retry:org/repo:1")
         assert action == "retry"
+        assert repo == "org/repo"
         assert issue == 1
 
     def test_invalid_no_colon(self):
-        action, issue = parse_custom_id("invalid")
+        action, repo, issue = parse_custom_id("invalid")
         assert action is None
+        assert repo is None
         assert issue is None
 
     def test_invalid_non_numeric(self):
-        action, issue = parse_custom_id("approve:abc")
+        action, repo, issue = parse_custom_id("approve:org/repo:abc")
         assert action is None
+        assert repo is None
         assert issue is None
 
 
