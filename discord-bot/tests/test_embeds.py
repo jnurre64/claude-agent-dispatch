@@ -45,46 +45,46 @@ class TestBuildEmbed:
 
 class TestBuildButtons:
     def test_plan_posted_has_approve_changes_comment(self):
-        view = build_buttons("plan_posted", 42, "https://example.com")
+        view = build_buttons("plan_posted", 42, "https://example.com", "org/repo")
         labels = [child.label for child in view.children]
         assert "Approve" in labels
         assert "Request Changes" in labels
         assert "Comment" in labels
 
     def test_plan_posted_has_view_link(self):
-        view = build_buttons("plan_posted", 42, "https://example.com")
+        view = build_buttons("plan_posted", 42, "https://example.com", "org/repo")
         link_buttons = [c for c in view.children if c.url]
         assert len(link_buttons) >= 1
         assert link_buttons[0].url == "https://example.com"
 
     def test_agent_failed_has_retry(self):
-        view = build_buttons("agent_failed", 42, "https://example.com")
+        view = build_buttons("agent_failed", 42, "https://example.com", "org/repo")
         labels = [child.label for child in view.children]
         assert "Retry" in labels
 
     def test_agent_failed_no_approve(self):
-        view = build_buttons("agent_failed", 42, "https://example.com")
+        view = build_buttons("agent_failed", 42, "https://example.com", "org/repo")
         labels = [child.label for child in view.children]
         assert "Approve" not in labels
 
     def test_tests_passed_view_only(self):
-        view = build_buttons("tests_passed", 42, "https://example.com")
+        view = build_buttons("tests_passed", 42, "https://example.com", "org/repo")
         action_buttons = [c for c in view.children if not c.url]
         assert len(action_buttons) == 0
 
-    def test_custom_ids_encode_issue_number(self):
-        view = build_buttons("plan_posted", 99, "https://example.com")
+    def test_custom_ids_encode_repo_and_issue(self):
+        view = build_buttons("plan_posted", 99, "https://example.com", "org/repo")
         custom_ids = [c.custom_id for c in view.children if c.custom_id]
-        assert "approve:99" in custom_ids
-        assert "changes:99" in custom_ids
-        assert "comment:99" in custom_ids
+        assert "approve:org/repo:99" in custom_ids
+        assert "changes:org/repo:99" in custom_ids
+        assert "comment:org/repo:99" in custom_ids
 
     def test_review_feedback_has_view_only(self):
-        view = build_buttons("review_feedback", 42, "https://example.com")
+        view = build_buttons("review_feedback", 42, "https://example.com", "org/repo")
         action_buttons = [c for c in view.children if not c.url]
         assert len(action_buttons) == 0
 
     def test_pr_created_has_view_link(self):
-        view = build_buttons("pr_created", 42, "https://example.com/pull/5")
+        view = build_buttons("pr_created", 42, "https://example.com/pull/5", "org/repo")
         link_buttons = [c for c in view.children if c.url]
         assert any(b.url == "https://example.com/pull/5" for b in link_buttons)
