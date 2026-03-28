@@ -63,6 +63,17 @@ class TestNotifyHandler:
         assert len(view.children) > 1  # View link + action buttons
 
     @pytest.mark.asyncio
+    async def test_buttons_contain_repo_in_custom_id(self, handler, mock_channel, make_request):
+        request = make_request(VALID_PAYLOAD)
+        await handler(request)
+        call_kwargs = mock_channel.send.call_args
+        view = call_kwargs.kwargs["view"]
+        action_buttons = [b for b in view.children if hasattr(b, "custom_id") and b.custom_id]
+        assert len(action_buttons) > 0
+        for button in action_buttons:
+            assert "org/repo" in button.custom_id
+
+    @pytest.mark.asyncio
     async def test_returns_503_when_channel_is_none(self, make_request):
         handler = create_notify_handler(None)
         request = make_request(VALID_PAYLOAD)

@@ -8,10 +8,43 @@ from bot import (
     gh_command,
     gh_dispatch,
     handle_button_interaction,
+    parse_custom_id,
     FeedbackModal,
     ALLOWED_USERS,
     ALLOWED_ROLE,
 )
+
+
+class TestParseCustomId:
+    def test_parses_action_repo_issue(self):
+        action, repo, issue = parse_custom_id("approve:org/repo:42")
+        assert action == "approve"
+        assert repo == "org/repo"
+        assert issue == 42
+
+    def test_parses_repo_with_hyphens(self):
+        action, repo, issue = parse_custom_id("retry:Frightful-Games/recipe-manager-demo:7")
+        assert action == "retry"
+        assert repo == "Frightful-Games/recipe-manager-demo"
+        assert issue == 7
+
+    def test_returns_none_for_old_format(self):
+        action, repo, issue = parse_custom_id("approve:42")
+        assert action is None
+        assert repo is None
+        assert issue is None
+
+    def test_returns_none_for_no_colon(self):
+        action, repo, issue = parse_custom_id("approve")
+        assert action is None
+        assert repo is None
+        assert issue is None
+
+    def test_returns_none_for_non_numeric_issue(self):
+        action, repo, issue = parse_custom_id("approve:org/repo:abc")
+        assert action is None
+        assert repo is None
+        assert issue is None
 
 
 class TestGhCommand:
@@ -70,8 +103,8 @@ class TestHandleButtonInteraction:
     async def test_approve_adds_label(self, mock_gh, mock_dispatch):
         mock_gh.return_value = (True, "")
         mock_dispatch.return_value = (True, "")
-        interaction = _mock_interaction("approve:42", user_id="123")
-        with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.REPO", "org/repo"):
+        interaction = _mock_interaction("approve:org/repo:42", user_id="123")
+        with patch("bot.ALLOWED_USERS", {"123"}):
             await handle_button_interaction(interaction)
         calls = [str(c) for c in mock_gh.call_args_list]
         combined = " ".join(calls)
@@ -80,11 +113,23 @@ class TestHandleButtonInteraction:
     @patch("bot.gh_dispatch")
     @patch("bot.gh_command")
     @pytest.mark.asyncio
+    async def test_approve_uses_repo_from_custom_id(self, mock_gh, mock_dispatch):
+        mock_gh.return_value = (True, "")
+        mock_dispatch.return_value = (True, "")
+        interaction = _mock_interaction("approve:Frightful-Games/recipe-manager-demo:42", user_id="123")
+        with patch("bot.ALLOWED_USERS", {"123"}):
+            await handle_button_interaction(interaction)
+        gh_args = mock_gh.call_args[0][0]
+        assert "Frightful-Games/recipe-manager-demo" in gh_args
+
+    @patch("bot.gh_dispatch")
+    @patch("bot.gh_command")
+    @pytest.mark.asyncio
     async def test_approve_sends_ephemeral_confirmation(self, mock_gh, mock_dispatch):
         mock_gh.return_value = (True, "")
         mock_dispatch.return_value = (True, "")
-        interaction = _mock_interaction("approve:42", user_id="123")
-        with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.REPO", "org/repo"):
+        interaction = _mock_interaction("approve:org/repo:42", user_id="123")
+        with patch("bot.ALLOWED_USERS", {"123"}):
             await handle_button_interaction(interaction)
         interaction.followup.send.assert_called_once()
 
@@ -94,8 +139,8 @@ class TestHandleButtonInteraction:
     async def test_approve_failure_reports_error(self, mock_gh, mock_dispatch):
         mock_gh.return_value = (False, "gh auth login required")
         mock_dispatch.return_value = (True, "")
-        interaction = _mock_interaction("approve:42", user_id="123")
-        with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.REPO", "org/repo"):
+        interaction = _mock_interaction("approve:org/repo:42", user_id="123")
+        with patch("bot.ALLOWED_USERS", {"123"}):
             await handle_button_interaction(interaction)
         interaction.followup.send.assert_called_once()
         msg = interaction.followup.send.call_args[0][0]
@@ -105,7 +150,7 @@ class TestHandleButtonInteraction:
 
     @pytest.mark.asyncio
     async def test_unauthorized_user_rejected(self):
-        interaction = _mock_interaction("approve:42", user_id="999")
+        interaction = _mock_interaction("approve:org/repo:42", user_id="999")
         with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.ALLOWED_ROLE", ""):
             await handle_button_interaction(interaction)
         interaction.response.send_message.assert_called_once()
@@ -118,8 +163,8 @@ class TestHandleButtonInteraction:
     async def test_retry_resets_labels(self, mock_gh, mock_dispatch):
         mock_gh.return_value = (True, "")
         mock_dispatch.return_value = (True, "")
-        interaction = _mock_interaction("retry:42", user_id="123")
-        with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.REPO", "org/repo"):
+        interaction = _mock_interaction("retry:org/repo:42", user_id="123")
+        with patch("bot.ALLOWED_USERS", {"123"}):
             await handle_button_interaction(interaction)
         mock_gh.assert_called_once()
         call_args = mock_gh.call_args[0][0]
@@ -133,8 +178,8 @@ class TestHandleButtonInteraction:
     async def test_approve_fires_dispatch(self, mock_gh, mock_dispatch):
         mock_gh.return_value = (True, "")
         mock_dispatch.return_value = (True, "")
-        interaction = _mock_interaction("approve:42", user_id="123")
-        with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.REPO", "org/repo"):
+        interaction = _mock_interaction("approve:org/repo:42", user_id="123")
+        with patch("bot.ALLOWED_USERS", {"123"}):
             await handle_button_interaction(interaction)
         mock_dispatch.assert_called_once_with("org/repo", "agent-implement", 42)
 
@@ -144,8 +189,8 @@ class TestHandleButtonInteraction:
     async def test_retry_fires_dispatch(self, mock_gh, mock_dispatch):
         mock_gh.return_value = (True, "")
         mock_dispatch.return_value = (True, "")
-        interaction = _mock_interaction("retry:42", user_id="123")
-        with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.REPO", "org/repo"):
+        interaction = _mock_interaction("retry:org/repo:42", user_id="123")
+        with patch("bot.ALLOWED_USERS", {"123"}):
             await handle_button_interaction(interaction)
         mock_dispatch.assert_called_once_with("org/repo", "agent-triage", 42)
 
@@ -155,8 +200,8 @@ class TestHandleButtonInteraction:
     async def test_dispatch_failure_still_shows_success(self, mock_gh, mock_dispatch):
         mock_gh.return_value = (True, "")
         mock_dispatch.return_value = (False, "dispatch failed")
-        interaction = _mock_interaction("approve:42", user_id="123")
-        with patch("bot.ALLOWED_USERS", {"123"}), patch("bot.REPO", "org/repo"):
+        interaction = _mock_interaction("approve:org/repo:42", user_id="123")
+        with patch("bot.ALLOWED_USERS", {"123"}):
             await handle_button_interaction(interaction)
         # Label succeeded, so Discord UI should still update
         interaction.message.edit.assert_called_once()
@@ -166,17 +211,27 @@ class TestHandleButtonInteraction:
 
     @pytest.mark.asyncio
     async def test_changes_shows_modal(self):
-        interaction = _mock_interaction("changes:42", user_id="123")
+        interaction = _mock_interaction("changes:org/repo:42", user_id="123")
         with patch("bot.ALLOWED_USERS", {"123"}):
             await handle_button_interaction(interaction)
         interaction.response.send_modal.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_comment_shows_modal(self):
-        interaction = _mock_interaction("comment:42", user_id="123")
+        interaction = _mock_interaction("comment:org/repo:42", user_id="123")
         with patch("bot.ALLOWED_USERS", {"123"}):
             await handle_button_interaction(interaction)
         interaction.response.send_modal.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_ignores_invalid_custom_id(self):
+        interaction = _mock_interaction("approve:42", user_id="123")
+        with patch("bot.ALLOWED_USERS", {"123"}):
+            await handle_button_interaction(interaction)
+        # Should silently return without any response
+        interaction.response.defer.assert_not_called()
+        interaction.response.send_message.assert_not_called()
+        interaction.response.send_modal.assert_not_called()
 
 
 class TestGhDispatch:
