@@ -33,21 +33,22 @@
 1. Title
 2. The Problem
 3. What If? + Positioning *(add "what this is / isn't" callouts)*
-4. Label State Machine *(fix diagram scaling)*
-5. Architecture *(fix diagram scaling)*
-6. **Where the Files Live** *(NEW — deployment layout)*
-7. Safety & Guardrails
-8. How Is This Different? *(expand to 4 columns, add claude-code-action)*
-9. **What You Need** *(NEW — requirements)*
-10. Demo Time
-11. What You're About to See
-12. Same System, Different Project
-13. How Fast Can You Set This Up?
-14. Getting Started
-15. **Why This Matters** *(NEW — benefits: history, context, CI/CD analogy)*
-16. Open Source / Q&A
+4. **Why This Matters** *(NEW — moved early, near "why should you care")*
+5. **What You Need** *(NEW — requirements, before architecture)*
+6. Label State Machine *(fix diagram scaling)*
+7. Architecture *(fix diagram scaling)*
+8. **Where the Files Live** *(NEW — deployment layout)*
+9. Safety & Guardrails
+10. How Is This Different? *(expand to 4 columns, add claude-code-action)*
+11. Demo Time
+12. What You're About to See
+13. Same System, Different Project
+14. How Fast Can You Set This Up?
+15. Getting Started
+16. **Roadmap** *(NEW — Slack, Docker, multi-agent, channels)*
+17. Open Source / Q&A
 
-Net: +3 slides (14 → 17). Time impact: ~1-2 minutes of additional slide content, offset by tighter transitions.
+Net: +4 slides (14 → 17, replacing 1 removed slide). Narrative arc: Problem → Vision → Why it matters → What you need → How it works → How it compares → Demo → Getting started → What's next → Close.
 
 ---
 
