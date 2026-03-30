@@ -18,8 +18,10 @@ Ask clarifying questions if ANY of these are true:
 - The issue references something you cannot find in the codebase
 - The scope is unclear (could be a small fix or a large refactor)
 - You need reproduction steps or test cases to understand the bug
+- Key implementation details are missing (e.g., format, behavior, visual style, placement) and different choices would lead to meaningfully different implementations
+- The issue describes a goal but not the specifics of how to achieve it
 
-Do NOT ask questions just to be safe -- if the issue is clear and you can find the relevant code, proceed to planning.
+Do NOT make assumptions about missing details to avoid asking questions. If the issue leaves important decisions unspecified, ask. A wrong assumption wastes more time than a clarifying question.
 
 ## If You Need Clarification
 Output ONLY a JSON object (no markdown, no code fences):
