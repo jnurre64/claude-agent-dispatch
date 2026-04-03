@@ -134,21 +134,6 @@ The system adapts to any project through:
 | [Testing](docs/testing.md) | BATS test suite — 52 tests, regression coverage, writing new tests |
 | [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
 
-## How This Differs from claude-code-action
-
-Anthropic's official [`claude-code-action`](https://github.com/anthropics/claude-code-action) is a GitHub Action for lightweight triggers — responding to `@claude` mentions or simple prompts on PRs. It's great for quick interactions.
-
-**claude-agent-dispatch** is a full autonomous agent lifecycle system:
-- Label-driven state machine with human checkpoints
-- Two-phase plan/implement workflow (plan → review → approve → implement)
-- Worktree isolation for concurrent issue handling
-- Debug data pipeline (pre-fetches gists and attachments for Claude to analyze)
-- Circuit breakers, tool restrictions, and safety mechanisms
-- Configurable prompts, tools, and test gates per project
-- Scheduled cleanup of stale branches, gists, and workflow runs
-
-Use `claude-code-action` for quick PR interactions. Use this system for autonomous issue-to-PR workflows.
-
 ## Repository Structure
 
 ```
