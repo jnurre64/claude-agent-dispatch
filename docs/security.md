@@ -109,6 +109,16 @@ If `AGENT_TEST_COMMAND` is configured, the dispatch script runs the test suite a
 
 The safety mechanisms above align with emerging industry frameworks for autonomous AI agents, including the [OWASP Top 10 for Agentic Applications](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/) (principle of least agency — only grant agents the minimum autonomy required for safe, bounded tasks) and the [NVIDIA AI Red Team's recommended controls](https://developer.nvidia.com/blog/securing-ai-agents-best-practices-from-nvidias-ai-red-team/) for autonomous agents (network egress restrictions, file write restrictions, approval architecture).
 
+### Data Privacy
+
+Issue content (titles, bodies, comments, attached gists/files) is sent to the Anthropic API for inference. This is the same trust boundary as using Claude Code interactively on your codebase.
+
+**Best practices:**
+- Never put secrets, API keys, passwords, or credentials in GitHub issues -- this is a GitHub best practice regardless of whether agents are involved
+- Avoid including personally identifiable information (PII) in issue descriptions
+- If your organization has data residency requirements (GDPR, etc.), verify that Anthropic's data processing locations are acceptable
+- Review Anthropic's privacy policy for data retention terms
+
 ## Security Checklist
 
 Review this checklist periodically and after any changes to the agent system.

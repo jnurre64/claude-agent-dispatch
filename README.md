@@ -46,6 +46,8 @@ On PR review with changes requested: `agent:pr-open` → `agent:revision` → `a
 - **Timeouts** — configurable per-job timeout prevents runaway sessions
 - **Two-phase dispatch** — human reviews the plan before any code is written
 
+> **Data privacy:** Issue content is sent to the Anthropic API for inference. Never put secrets, API keys, or PII in GitHub issues. See [docs/security.md](docs/security.md#data-privacy) for details.
+
 ## Quick Start
 
 ### Prerequisites
@@ -135,6 +137,7 @@ The system adapts to any project through:
 | [Security](docs/security.md) | Threat model, safety mechanisms, security checklist |
 | [Testing](docs/testing.md) | BATS test suite — 52 tests, regression coverage, writing new tests |
 | [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
+| [Versioning](docs/versioning.md) | SemVer policy, release process, changelog conventions |
 
 ## Repository Structure
 
@@ -169,6 +172,10 @@ claude-agent-dispatch/
 ├── CLAUDE.md                    # Claude Code instructions for this repo
 └── docs/                        # Full documentation
 ```
+
+## Disclaimer
+
+Claude Agent Dispatch is an independent, community-built open-source project. It is not affiliated with, endorsed by, or sponsored by Anthropic, PBC. "Claude" and "Claude Code" are trademarks of Anthropic. This project uses Claude Code as its underlying agent and references these trademarks solely to describe that functionality.
 
 ## License
 

@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ─── Ensure tools are in PATH ───────────────────────────────────
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:${DOTNET_ROOT:-$HOME/.dotnet}:$PATH"
 
 # Allow claude -p to run even if called from within a Claude Code session
 unset CLAUDECODE 2>/dev/null || true
@@ -18,18 +18,90 @@ EVENT_TYPE="${1:?Usage: agent-dispatch.sh <event_type> <repo> <number>}"
 REPO="${2:?}"
 NUMBER="${3:?}"  # Issue or PR number
 
+# ─── Global error trap ──────────────────────────────────────────
+# Catch unexpected errors (config failures, missing tools, script bugs)
+# and post a comment on the issue so failures aren't silent.
+_on_unexpected_error() {
+    local exit_code=$?
+    local line=${1:-unknown}
+    # EXIT trap fires on success too — only act on errors
+    [ "$exit_code" -eq 0 ] && return 0
+    # Best-effort: every command uses || true since gh/notify may be
+    # unavailable (they might be the thing that's broken).
+    # Capture common diagnostic context
+    local diag_hints=""
+    case "$exit_code" in
+        127) diag_hints="**Likely cause:** A required command was not found. Check that \`claude\`, \`gh\`, \`jq\`, and project tools (e.g., \`dotnet\`, \`npm\`) are installed on the runner." ;;
+        1)   diag_hints="**Likely cause:** A command or config assertion failed. Check the workflow run logs for the specific error message." ;;
+        124) diag_hints="**Likely cause:** A command timed out." ;;
+    esac
+
+    gh issue comment "$NUMBER" --repo "$REPO" \
+        --body "## Agent Infrastructure Error
+
+The agent encountered an unexpected error and could not complete.
+
+| Detail | Value |
+|--------|-------|
+| **Script** | \`agent-dispatch.sh\` line $line |
+| **Event** | \`$EVENT_TYPE\` |
+| **Exit code** | $exit_code |
+| **Runner** | ${RUNNER_NAME:-unknown} |
+
+${diag_hints}
+
+Check the [workflow run logs](https://github.com/${REPO}/actions) for details." 2>/dev/null || true
+
+    # Try to set the failed label (set_label may not be loaded yet)
+    if command -v set_label &>/dev/null; then
+        set_label "agent:failed" 2>/dev/null || true
+    else
+        gh issue edit "$NUMBER" --repo "$REPO" --add-label "agent:failed" 2>/dev/null || true
+    fi
+
+    # Try to send a notification (notify may not be loaded yet)
+    if command -v notify &>/dev/null; then
+        notify "agent_failed" "Issue #${NUMBER}" \
+            "https://github.com/${REPO}/issues/${NUMBER}" \
+            "Unexpected error at line $line (exit code $exit_code)" 2>/dev/null || true
+    fi
+}
+trap '_on_unexpected_error $LINENO' ERR
+trap '_on_unexpected_error exit' EXIT
+
 # ─── Load configuration ─────────────────────────────────────────
-# Source project-specific config if it exists
-AGENT_CONFIG="${AGENT_CONFIG:-$HOME/agent-infra/config.env}"
-if [ -f "$AGENT_CONFIG" ]; then
+# Layered config: defaults (committed) → overrides (gitignored) → defaults.sh
+#
+# 1. config.defaults.env — committed, non-sensitive project config
+# 2. config.env           — gitignored, optional sensitive overrides (GH_TOKEN, etc.)
+# 3. defaults.sh          — fills in anything still unset
+#
+# Environment variables always take highest precedence.
+
+# Source committed defaults first (standalone mode: .agent-dispatch/config.defaults.env)
+AGENT_DEFAULTS="${SCRIPT_DIR}/../config.defaults.env"
+if [ -f "$AGENT_DEFAULTS" ]; then
     # shellcheck source=/dev/null
-    source "$AGENT_CONFIG"
-    # Resolve config directory for relative prompt paths
-    CONFIG_DIR="$(cd "$(dirname "$AGENT_CONFIG")" && pwd)"
+    source "$AGENT_DEFAULTS"
+    CONFIG_DIR="$(cd "$(dirname "$AGENT_DEFAULTS")" && pwd)"
     export CONFIG_DIR
 fi
 
-# Source defaults (fills in anything not set by config.env)
+# Source optional overrides (may contain secrets — never commit this file)
+AGENT_CONFIG="${AGENT_CONFIG:-}"
+if [ -n "$AGENT_CONFIG" ] && [ -f "$AGENT_CONFIG" ]; then
+    # shellcheck source=/dev/null
+    source "$AGENT_CONFIG"
+    CONFIG_DIR="$(cd "$(dirname "$AGENT_CONFIG")" && pwd)"
+    export CONFIG_DIR
+elif [ -f "${SCRIPT_DIR}/../config.env" ]; then
+    # shellcheck source=/dev/null
+    source "${SCRIPT_DIR}/../config.env"
+    CONFIG_DIR="$(cd "$(dirname "${SCRIPT_DIR}/../config.env")" && pwd)"
+    export CONFIG_DIR
+fi
+
+# Source defaults (fills in anything not set by either config file)
 # shellcheck source=lib/defaults.sh
 source "${SCRIPT_DIR}/lib/defaults.sh"
 
@@ -139,10 +211,30 @@ ${plan_content}
             log "Plan posted. Awaiting human approval."
         else
             log "Claude reported plan_ready but no plan file found."
+            # Diagnose the failure
+            local diag=""
+            if [[ "$AGENT_ALLOWED_TOOLS_TRIAGE" != *"Write"* ]]; then
+                diag="**Root cause:** The \`Write\` tool is not in \`AGENT_ALLOWED_TOOLS_TRIAGE\`. The agent needs \`Write\` to create the plan file. Add \`Write\` to the triage tool allowlist in your config."
+            elif [ ! -d "${WORKTREE_DIR}/.agent-data" ]; then
+                diag="**Root cause:** The \`.agent-data/\` directory does not exist in the worktree."
+            else
+                diag="The \`.agent-data/\` directory exists and \`Write\` is allowed, but the plan file was not created. This may be intermittent — retry by re-labeling with \`agent\`."
+            fi
             set_label "agent:failed"
             notify "agent_failed" "$issue_title" "https://github.com/${REPO}/issues/${NUMBER}" "Plan file not found"
             gh issue comment "$NUMBER" --repo "$REPO" \
-                --body "Agent created a plan but failed to write it to the expected file. Please re-label with \`agent\` to retry." 2>/dev/null || true
+                --body "## Agent Error: Plan file not found
+
+The agent reported that the plan was ready, but the expected file (\`.agent-data/plan.md\`) was not created.
+
+${diag}
+
+<details><summary>Diagnostic info</summary>
+
+- **Triage tools:** \`${AGENT_ALLOWED_TOOLS_TRIAGE}\`
+- **Worktree:** \`${WORKTREE_DIR}\`
+- **Plan file path:** \`${plan_file}\`
+</details>" 2>/dev/null || true
             cleanup_worktree
         fi
         # NOTE: worktree is intentionally NOT cleaned up — the implement phase reuses it

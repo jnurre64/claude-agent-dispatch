@@ -23,17 +23,17 @@ If any required tools are missing, help the user install them before continuing.
 
 Use the `AskUserQuestion` tool to ask the user which mode they prefer:
 
-**Reference mode** (recommended):
+**Standalone mode** (recommended):
+- All scripts, prompts, config, and workflows are copied directly into the user's repo under `.agent-dispatch/`
+- No upstream dependency — the user owns every file and can modify freely
+- No automatic updates — the user manages their own copy
+- Best for: most users, full control, easy to customize, no external dependencies
+
+**Reference mode**:
 - Thin workflow files in the user's repo call back to this upstream repo via `uses: jnurre64/claude-agent-dispatch/...@v1`
 - Scripts run from a clone of this repo on the runner (`~/agent-infra/`)
 - Updates come automatically via version tags and `git pull`
 - Best for: users who want automatic updates and minimal files in their repo
-
-**Standalone mode**:
-- All scripts, prompts, config, and workflows are copied directly into the user's repo under `.agent-dispatch/`
-- No upstream dependency — the user owns every file and can modify freely
-- No automatic updates — the user manages their own copy
-- Best for: users who want full control, plan to customize heavily, or prefer no external dependencies
 
 ## Step 2: Gather Project Information
 
@@ -49,7 +49,7 @@ Use the `AskUserQuestion` tool to collect the following. If the user provided an
 ## Step 3: Generate Configuration
 
 ### Reference mode
-Read the template at `config.env.example` (in the repo root). Fill in the user's answers and write to `config.env` in the repo root. Show the user the generated config and ask if they want to adjust anything.
+Read the template at `config.defaults.env.example` (in the repo root). Fill in the user's answers and write to `config.env` in the repo root (reference mode uses a single file since it's not committed to a repo). Show the user the generated config and ask if they want to adjust anything.
 
 ### Standalone mode
 Create the `.agent-dispatch/` directory in the user's target repo. Copy:
@@ -58,9 +58,20 @@ Create the `.agent-dispatch/` directory in the user's target repo. Copy:
 - `scripts/check-prereqs.sh` and `scripts/create-labels.sh` → `.agent-dispatch/scripts/`
 - `prompts/*.md` → `.agent-dispatch/prompts/`
 - `labels.txt` → `.agent-dispatch/`
-- Generated `config.env` → `.agent-dispatch/config.env`
+- Generated `config.defaults.env` → `.agent-dispatch/config.defaults.env` (non-sensitive project config, committed)
+
+**Important:** Configuration uses a layered approach:
+- `config.defaults.env` — **committed** to the repo. Contains non-sensitive project config (bot username, timeouts, tool permissions, test commands). This file MUST NOT contain secrets, tokens, or credentials.
+- `config.env` — **gitignored**, optional. Contains sensitive overrides (Discord tokens, webhook URLs, GitHub tokens). Values here override `config.defaults.env`.
+- Environment variables — highest precedence, override both files.
 
 Make all scripts executable after copying.
+
+**Gitignore check:** Many `.gitignore` templates (e.g., VisualStudio, Node) include `*.env` which will block `config.defaults.env` from being committed. After copying files, check if the target repo's `.gitignore` excludes `*.env`. If so, add an exception:
+```
+!.agent-dispatch/config.defaults.env
+```
+Warn the user about this and make the change for them.
 
 ## Step 4: Review Default Prompts
 
@@ -105,6 +116,15 @@ For each template:
 3. Write it to the user's target repo at `.github/workflows/`
 
 Ask the user where their target repo is cloned locally so you can write the files there. For standalone mode, this was already collected in Step 2.
+
+### Discord bot dispatch (optional)
+
+If the user has set up the Discord bot (see `docs/notifications.md`), also deploy the dispatch template:
+
+- **Reference mode:** `caller-dispatch.yml`
+- **Standalone mode:** `agent-dispatch.yml` (from `templates/standalone/`)
+
+This template enables the Discord bot's Approve, Retry, Comment, and Request Changes actions to trigger agent workflows. It is only needed if the Discord bot is in use.
 
 ## Step 7: Guide Secret Setup
 

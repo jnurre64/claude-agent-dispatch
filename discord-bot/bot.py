@@ -6,7 +6,6 @@ import re
 import subprocess
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 from aiohttp import web
 
@@ -19,7 +18,6 @@ GUILD_ID = int(os.environ.get("AGENT_DISCORD_GUILD_ID", "0"))
 ALLOWED_USERS = set(os.environ.get("AGENT_DISCORD_ALLOWED_USERS", "").split(",")) - {""}
 ALLOWED_ROLE = os.environ.get("AGENT_DISCORD_ALLOWED_ROLE", "")
 BOT_PORT = int(os.environ.get("AGENT_DISCORD_BOT_PORT", "8675"))
-REPO = os.environ.get("AGENT_DISPATCH_REPO", "")
 
 
 def sanitize_input(text: str) -> str:
@@ -27,15 +25,21 @@ def sanitize_input(text: str) -> str:
     return re.sub(r"[`$\\]", "", text)[:2000]
 
 
-def parse_custom_id(custom_id: str) -> tuple[str | None, int | None]:
-    """Parse 'action:issue_number' from a button custom_id."""
-    if ":" not in custom_id:
-        return None, None
-    action, num_str = custom_id.split(":", 1)
+def parse_custom_id(custom_id: str) -> tuple[str | None, str | None, int | None]:
+    """Parse 'action:owner/repo:issue_number' from a button custom_id.
+
+    Returns (action, repo, issue_number) or (None, None, None) on failure.
+    """
+    parts = custom_id.split(":")
+    if len(parts) < 3:
+        return None, None, None
+    action = parts[0]
+    num_str = parts[-1]
+    repo = ":".join(parts[1:-1])
     try:
-        return action, int(num_str)
+        return action, repo, int(num_str)
     except ValueError:
-        return None, None
+        return None, None, None
 
 
 def is_authorized_check(
@@ -98,42 +102,51 @@ def build_embed(
     return embed
 
 
-def build_buttons(event_type: str, issue_number: int, url: str) -> discord.ui.View:
+def build_buttons(event_type: str, issue_number: int, url: str, repo: str) -> discord.ui.View:
     """Build interactive buttons for a notification message."""
     view = discord.ui.View(timeout=None)
     view.add_item(discord.ui.Button(label="View", url=url, style=discord.ButtonStyle.link))
 
     if event_type in _PLAN_EVENTS:
         view.add_item(discord.ui.Button(
-            label="Approve", custom_id=f"approve:{issue_number}", style=discord.ButtonStyle.success
+            label="Approve", custom_id=f"approve:{repo}:{issue_number}", style=discord.ButtonStyle.success
         ))
         view.add_item(discord.ui.Button(
-            label="Request Changes", custom_id=f"changes:{issue_number}", style=discord.ButtonStyle.danger
+            label="Request Changes", custom_id=f"changes:{repo}:{issue_number}", style=discord.ButtonStyle.danger
         ))
         view.add_item(discord.ui.Button(
-            label="Comment", custom_id=f"comment:{issue_number}", style=discord.ButtonStyle.secondary
+            label="Comment", custom_id=f"comment:{repo}:{issue_number}", style=discord.ButtonStyle.secondary
         ))
     elif event_type in _RETRY_EVENTS:
         view.add_item(discord.ui.Button(
-            label="Retry", custom_id=f"retry:{issue_number}", style=discord.ButtonStyle.primary
+            label="Retry", custom_id=f"retry:{repo}:{issue_number}", style=discord.ButtonStyle.primary
         ))
 
     return view
 
 
-def gh_command(args: list[str]) -> str:
-    """Execute a gh CLI command and return stdout."""
+def gh_command(args: list[str]) -> tuple[bool, str]:
+    """Execute a gh CLI command and return (success, output)."""
     try:
         result = subprocess.run(
             ["gh"] + args, capture_output=True, text=True, timeout=30
         )
         if result.returncode != 0:
             log.warning("gh %s failed: %s", " ".join(args[:3]), result.stderr.strip())
-            return result.stderr.strip()
-        return result.stdout.strip()
+            return False, result.stderr.strip()
+        return True, result.stdout.strip()
     except subprocess.TimeoutExpired:
         log.error("gh command timed out: %s", " ".join(args[:3]))
-        return "Error: command timed out"
+        return False, "Error: command timed out"
+
+
+def gh_dispatch(repo: str, event_type: str, issue_number: int) -> tuple[bool, str]:
+    """Fire a repository_dispatch event to trigger a workflow."""
+    return gh_command([
+        "api", f"repos/{repo}/dispatches",
+        "-f", f"event_type={event_type}",
+        "-f", f"client_payload[issue_number]={issue_number}",
+    ])
 
 
 _ALL_AGENT_LABELS = [
@@ -164,7 +177,12 @@ class FeedbackModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=True)
         text = sanitize_input(self.feedback.value)
-        gh_command(["issue", "comment", str(self.issue_number), "--repo", self.repo, "--body", text])
+        ok, err = gh_command(["issue", "comment", str(self.issue_number), "--repo", self.repo, "--body", text])
+        if not ok:
+            await interaction.followup.send(
+                f"Failed to comment on #{self.issue_number}: {err}", ephemeral=True
+            )
+            return
 
         if interaction.message and interaction.message.embeds:
             action_label = "Changes requested" if self.action == "changes" else "Comment"
@@ -174,15 +192,16 @@ class FeedbackModal(discord.ui.Modal):
             )
             await interaction.message.edit(embed=embed)
 
+        gh_dispatch(self.repo, "agent-reply", self.issue_number)
         await interaction.followup.send("Feedback posted to GitHub.", ephemeral=True)
-        log.info("MODAL: %s on #%d by %s (id=%s)", self.action, self.issue_number, interaction.user, interaction.user.id)
+        log.info("MODAL: %s on %s#%d by %s (id=%s)", self.action, self.repo, self.issue_number, interaction.user, interaction.user.id)
 
 
 async def handle_button_interaction(interaction: discord.Interaction) -> None:
     """Handle a button click on a notification message."""
     custom_id = interaction.data.get("custom_id", "")
-    action, issue_number = parse_custom_id(custom_id)
-    if action is None or issue_number is None:
+    action, repo, issue_number = parse_custom_id(custom_id)
+    if action is None or repo is None or issue_number is None:
         return
 
     user_id = str(interaction.user.id)
@@ -195,27 +214,37 @@ async def handle_button_interaction(interaction: discord.Interaction) -> None:
         return
 
     if action in ("changes", "comment"):
-        modal = FeedbackModal(action=action, issue_number=issue_number, repo=REPO)
+        modal = FeedbackModal(action=action, issue_number=issue_number, repo=repo)
         await interaction.response.send_modal(modal)
         return
 
     await interaction.response.defer(ephemeral=True)
 
     if action == "approve":
-        gh_command([
-            "issue", "edit", str(issue_number), "--repo", REPO,
+        ok, err = gh_command([
+            "issue", "edit", str(issue_number), "--repo", repo,
             "--remove-label", "agent:plan-review", "--add-label", "agent:plan-approved",
         ])
         status_text = f"Approved by {interaction.user.display_name}"
     elif action == "retry":
-        gh_command([
-            "issue", "edit", str(issue_number), "--repo", REPO,
+        ok, err = gh_command([
+            "issue", "edit", str(issue_number), "--repo", repo,
             "--remove-label", ",".join(_ALL_AGENT_LABELS), "--add-label", "agent",
         ])
         status_text = f"Retried by {interaction.user.display_name}"
     else:
         await interaction.followup.send("Unknown action.", ephemeral=True)
         return
+
+    if not ok:
+        await interaction.followup.send(
+            f"Failed to update GitHub issue #{issue_number}: {err}", ephemeral=True
+        )
+        return
+
+    # Map button actions to dispatch event types
+    dispatch_events = {"approve": "agent-implement", "retry": "agent-triage"}
+    dispatch_ok, dispatch_err = gh_dispatch(repo, dispatch_events[action], issue_number)
 
     embed = interaction.message.embeds[0] if interaction.message.embeds else discord.Embed()
     embed.add_field(name="Action", value=status_text, inline=False)
@@ -225,78 +254,15 @@ async def handle_button_interaction(interaction: discord.Interaction) -> None:
             if hasattr(item, "url") and item.url:
                 view.add_item(discord.ui.Button(label=item.label, url=item.url, style=discord.ButtonStyle.link))
     await interaction.message.edit(embed=embed, view=view)
-    await interaction.followup.send(f"Done: {status_text}", ephemeral=True)
-    log.info("ACTION: %s on #%d by %s (id=%s)", action, issue_number, interaction.user, interaction.user.id)
 
-
-def register_slash_commands(tree: app_commands.CommandTree) -> None:
-    """Register all slash commands on the command tree."""
-
-    @tree.command(name="approve", description="Approve an agent's plan")
-    @app_commands.describe(issue="Issue number")
-    async def cmd_approve(interaction: discord.Interaction, issue: int):
-        if not _check_slash_auth(interaction):
-            return await interaction.response.send_message("Permission denied.", ephemeral=True)
-        await interaction.response.defer(ephemeral=True)
-        gh_command([
-            "issue", "edit", str(issue), "--repo", REPO,
-            "--remove-label", "agent:plan-review", "--add-label", "agent:plan-approved",
-        ])
-        await interaction.followup.send(f"Plan for #{issue} approved.", ephemeral=True)
-        log.info("SLASH: /approve #%d by %s", issue, interaction.user)
-
-    @tree.command(name="reject", description="Reject a plan with reason")
-    @app_commands.describe(issue="Issue number", reason="Reason for rejection")
-    async def cmd_reject(interaction: discord.Interaction, issue: int, reason: str = ""):
-        if not _check_slash_auth(interaction):
-            return await interaction.response.send_message("Permission denied.", ephemeral=True)
-        await interaction.response.defer(ephemeral=True)
-        body = sanitize_input(reason) if reason else "Plan rejected via Discord."
-        gh_command(["issue", "comment", str(issue), "--repo", REPO, "--body", body])
-        gh_command(["issue", "edit", str(issue), "--repo", REPO, "--add-label", "agent:failed"])
-        await interaction.followup.send(f"Plan for #{issue} rejected.", ephemeral=True)
-        log.info("SLASH: /reject #%d by %s", issue, interaction.user)
-
-    @tree.command(name="comment", description="Post feedback on an issue")
-    @app_commands.describe(issue="Issue number", text="Your comment")
-    async def cmd_comment(interaction: discord.Interaction, issue: int, text: str):
-        if not _check_slash_auth(interaction):
-            return await interaction.response.send_message("Permission denied.", ephemeral=True)
-        await interaction.response.defer(ephemeral=True)
-        gh_command(["issue", "comment", str(issue), "--repo", REPO, "--body", sanitize_input(text)])
-        await interaction.followup.send(f"Comment posted on #{issue}.", ephemeral=True)
-        log.info("SLASH: /comment #%d by %s", issue, interaction.user)
-
-    @tree.command(name="status", description="Check agent status for an issue")
-    @app_commands.describe(issue="Issue number")
-    async def cmd_status(interaction: discord.Interaction, issue: int):
-        if not _check_slash_auth(interaction):
-            return await interaction.response.send_message("Permission denied.", ephemeral=True)
-        await interaction.response.defer(ephemeral=True)
-        labels = gh_command(["issue", "view", str(issue), "--repo", REPO, "--json", "labels", "--jq", ".labels[].name"])
-        agent_labels = [l for l in labels.split("\n") if l.startswith("agent")]
-        status = ", ".join(agent_labels) if agent_labels else "No agent labels"
-        await interaction.followup.send(f"#{issue} status: {status}", ephemeral=True)
-
-    @tree.command(name="retry", description="Re-trigger agent on an issue")
-    @app_commands.describe(issue="Issue number")
-    async def cmd_retry(interaction: discord.Interaction, issue: int):
-        if not _check_slash_auth(interaction):
-            return await interaction.response.send_message("Permission denied.", ephemeral=True)
-        await interaction.response.defer(ephemeral=True)
-        gh_command([
-            "issue", "edit", str(issue), "--repo", REPO,
-            "--remove-label", ",".join(_ALL_AGENT_LABELS), "--add-label", "agent",
-        ])
-        await interaction.followup.send(f"Agent re-triggered on #{issue}.", ephemeral=True)
-        log.info("SLASH: /retry #%d by %s", issue, interaction.user)
-
-
-def _check_slash_auth(interaction: discord.Interaction) -> bool:
-    """Authorization check for slash commands."""
-    user_id = str(interaction.user.id)
-    role_ids = [str(r.id) for r in getattr(interaction.user, "roles", [])]
-    return is_authorized_check(user_id, role_ids, ALLOWED_USERS, ALLOWED_ROLE)
+    if not dispatch_ok:
+        await interaction.followup.send(
+            f"Done: {status_text} (warning: workflow trigger failed — {dispatch_err})",
+            ephemeral=True,
+        )
+    else:
+        await interaction.followup.send(f"Done: {status_text}", ephemeral=True)
+    log.info("ACTION: %s on %s#%d by %s (id=%s)", action, repo, issue_number, interaction.user, interaction.user.id)
 
 
 def create_notify_handler(channel):
@@ -314,7 +280,7 @@ def create_notify_handler(channel):
         repo = data.get("repo", "")
 
         embed = build_embed(event_type, title, url, description, issue_number, repo)
-        view = build_buttons(event_type, issue_number, url)
+        view = build_buttons(event_type, issue_number, url, repo)
         await channel.send(embed=embed, view=view)
         return web.Response(text="OK")
 
@@ -344,19 +310,12 @@ def main() -> None:
     if not GUILD_ID:
         print("Error: AGENT_DISCORD_GUILD_ID is not set")
         raise SystemExit(1)
-    if not REPO:
-        print("Error: AGENT_DISPATCH_REPO is not set (e.g., 'owner/repo')")
-        raise SystemExit(1)
 
     intents = discord.Intents.default()
     bot = commands.Bot(command_prefix="!", intents=intents)
-    register_slash_commands(bot.tree)
 
     @bot.event
     async def on_ready():
-        guild = discord.Object(id=GUILD_ID)
-        bot.tree.copy_global_to(guild=guild)
-        await bot.tree.sync(guild=guild)
         log.info("Bot ready: %s (guild %d)", bot.user, GUILD_ID)
 
         channel = bot.get_channel(CHANNEL_ID)
@@ -366,8 +325,6 @@ def main() -> None:
 
     @bot.event
     async def on_interaction(interaction: discord.Interaction):
-        # commands.Bot handles slash commands automatically via its tree.
-        # We only need to handle button clicks here.
         if interaction.type == discord.InteractionType.component:
             await handle_button_interaction(interaction)
 

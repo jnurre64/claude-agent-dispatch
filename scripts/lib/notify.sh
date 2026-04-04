@@ -1,7 +1,8 @@
 #!/bin/bash
 # ─── Notification layer (optional) ─────────────────────────────────
+# Provides: notify
 # Sends notifications at dispatch milestones to configured platforms.
-# Currently supports Discord webhooks. Slack and Telegram planned.
+# Currently supports Discord webhooks and Discord bot. Slack and Telegram planned.
 # Silently no-ops if no platform is configured.
 
 # ─── Notification level check ──────────────────────────────────────
@@ -171,9 +172,10 @@ notify() {
     local url="${3:-}"
     local description="${4:-}"
 
-    # No-op if no platform is configured.
-    # Webhook URL is required even in bot mode (used as fallback).
-    if [ -z "${AGENT_NOTIFY_DISCORD_WEBHOOK:-}" ]; then
+    local backend="${AGENT_NOTIFY_BACKEND:-webhook}"
+
+    # No-op if no notification platform is configured
+    if [ "$backend" != "bot" ] && [ -z "${AGENT_NOTIFY_DISCORD_WEBHOOK:-}" ]; then
         return 0
     fi
 
@@ -181,14 +183,14 @@ notify() {
     _notify_should_send "$event_type" || return 0
 
     # ── Route based on backend ──
-    local backend="${AGENT_NOTIFY_BACKEND:-webhook}"
-
     if [ "$backend" = "bot" ]; then
-        # Try bot first, fall back to webhook on failure
+        # Try bot first, fall back to webhook if available
         if ! _notify_send_bot "$event_type" "$title" "$url" "$description"; then
-            local discord_json
-            discord_json=$(_notify_build_discord_embed "$event_type" "$title" "$url" "$description")
-            _notify_send_discord "$discord_json"
+            if [ -n "${AGENT_NOTIFY_DISCORD_WEBHOOK:-}" ]; then
+                local discord_json
+                discord_json=$(_notify_build_discord_embed "$event_type" "$title" "$url" "$description")
+                _notify_send_discord "$discord_json"
+            fi
         fi
     else
         # Webhook mode (Phase 1 default)
