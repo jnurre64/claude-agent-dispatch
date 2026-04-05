@@ -136,3 +136,108 @@ EOF
     # The start_sha line in handle_implement should reference origin/main
     echo "$implement_section" | grep 'start_sha=' | grep -q 'origin/main'
 }
+
+# ═══════════════════════════════════════════════════════════════
+# Direct implement configuration
+# ═══════════════════════════════════════════════════════════════
+
+@test "defaults.sh: AGENT_ALLOW_DIRECT_IMPLEMENT defaults to true" {
+    export AGENT_BOT_USER="test-bot"
+    unset AGENT_ALLOW_DIRECT_IMPLEMENT
+
+    source "${LIB_DIR}/defaults.sh"
+
+    assert_equal "$AGENT_ALLOW_DIRECT_IMPLEMENT" "true"
+}
+
+@test "defaults.sh: AGENT_ALLOW_DIRECT_IMPLEMENT can be overridden to false" {
+    export AGENT_BOT_USER="test-bot"
+    export AGENT_ALLOW_DIRECT_IMPLEMENT="false"
+
+    source "${LIB_DIR}/defaults.sh"
+
+    assert_equal "$AGENT_ALLOW_DIRECT_IMPLEMENT" "false"
+}
+
+@test "defaults.sh: AGENT_PROMPT_VALIDATE defaults to empty" {
+    export AGENT_BOT_USER="test-bot"
+    unset AGENT_PROMPT_VALIDATE
+
+    source "${LIB_DIR}/defaults.sh"
+
+    assert_equal "$AGENT_PROMPT_VALIDATE" ""
+}
+
+# ─── REGRESSION: direct-implement — plan content pre-loading ────
+
+@test "REGRESSION direct-implement: handle_implement checks AGENT_PLAN_CONTENT before extracting from comments" {
+    # Verify the dispatch script checks for pre-loaded plan content
+    grep -q 'AGENT_PLAN_CONTENT' "${SCRIPTS_DIR}/agent-dispatch.sh"
+}
+
+@test "REGRESSION direct-implement: handle_implement logs when using pre-loaded plan" {
+    grep -q 'Using pre-loaded plan content' "${SCRIPTS_DIR}/agent-dispatch.sh"
+}
+
+# ═══════════════════════════════════════════════════════════════
+# handle_direct_implement handler
+# ═══════════════════════════════════════════════════════════════
+
+@test "dispatch script: has handle_direct_implement function" {
+    grep -q 'handle_direct_implement()' "${SCRIPTS_DIR}/agent-dispatch.sh"
+}
+
+@test "dispatch script: direct_implement case in dispatch switch" {
+    grep -q 'direct_implement)' "${SCRIPTS_DIR}/agent-dispatch.sh"
+}
+
+@test "dispatch script: handle_direct_implement checks AGENT_ALLOW_DIRECT_IMPLEMENT" {
+    local handler_section
+    handler_section=$(sed -n '/^handle_direct_implement/,/^handle_/p' "${SCRIPTS_DIR}/agent-dispatch.sh" | head -60)
+
+    echo "$handler_section" | grep -q 'AGENT_ALLOW_DIRECT_IMPLEMENT'
+}
+
+@test "dispatch script: handle_direct_implement sets agent:validating label" {
+    local handler_section
+    handler_section=$(sed -n '/^handle_direct_implement/,/^handle_/p' "${SCRIPTS_DIR}/agent-dispatch.sh" | head -60)
+
+    echo "$handler_section" | grep -q 'agent:validating'
+}
+
+@test "dispatch script: handle_direct_implement uses validate prompt" {
+    local handler_section
+    handler_section=$(sed -n '/^handle_direct_implement/,/^handle_/p' "${SCRIPTS_DIR}/agent-dispatch.sh" | head -80)
+
+    echo "$handler_section" | grep -q 'AGENT_PROMPT_VALIDATE'
+}
+
+@test "dispatch script: handle_direct_implement posts comment with direct-implement marker on failure" {
+    local handler_section
+    handler_section=$(sed -n '/^handle_direct_implement/,/^handle_/p' "${SCRIPTS_DIR}/agent-dispatch.sh" | head -80)
+
+    echo "$handler_section" | grep -q 'agent-direct-implement'
+}
+
+@test "dispatch script: handle_direct_implement calls handle_implement on success" {
+    local handler_section
+    handler_section=$(sed -n '/^handle_direct_implement/,/^handle_/p' "${SCRIPTS_DIR}/agent-dispatch.sh" | head -80)
+
+    echo "$handler_section" | grep -q 'handle_implement'
+}
+
+# ─── REGRESSION: direct-implement — reply re-entry ──────────────
+
+@test "REGRESSION direct-implement: handle_issue_reply checks for direct-implement marker" {
+    local reply_section
+    reply_section=$(sed -n '/^handle_issue_reply/,/^handle_implement/p' "${SCRIPTS_DIR}/agent-dispatch.sh")
+
+    echo "$reply_section" | grep -q 'agent-direct-implement'
+}
+
+@test "REGRESSION direct-implement: handle_issue_reply calls handle_direct_implement when marker found" {
+    local reply_section
+    reply_section=$(sed -n '/^handle_issue_reply/,/^handle_implement/p' "${SCRIPTS_DIR}/agent-dispatch.sh")
+
+    echo "$reply_section" | grep -q 'handle_direct_implement'
+}
