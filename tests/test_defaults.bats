@@ -225,3 +225,19 @@ EOF
 
     echo "$handler_section" | grep -q 'handle_implement'
 }
+
+# ─── REGRESSION: direct-implement — reply re-entry ──────────────
+
+@test "REGRESSION direct-implement: handle_issue_reply checks for direct-implement marker" {
+    local reply_section
+    reply_section=$(sed -n '/^handle_issue_reply/,/^handle_implement/p' "${SCRIPTS_DIR}/agent-dispatch.sh")
+
+    echo "$reply_section" | grep -q 'agent-direct-implement'
+}
+
+@test "REGRESSION direct-implement: handle_issue_reply calls handle_direct_implement when marker found" {
+    local reply_section
+    reply_section=$(sed -n '/^handle_issue_reply/,/^handle_implement/p' "${SCRIPTS_DIR}/agent-dispatch.sh")
+
+    echo "$reply_section" | grep -q 'handle_direct_implement'
+}

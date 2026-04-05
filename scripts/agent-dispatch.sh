@@ -276,6 +276,18 @@ handle_issue_reply() {
         return
     fi
 
+    # Check if this issue entered via direct implement
+    local issue_json_check
+    issue_json_check=$(gh issue view "$NUMBER" --repo "$REPO" --json comments --jq '
+        [.comments[] | select(.body | test("<!-- agent-direct-implement -->"))] | length
+    ' 2>/dev/null || echo "0")
+
+    if [ "$issue_json_check" -gt 0 ]; then
+        log "Issue entered via direct implement. Re-running validation..."
+        handle_direct_implement
+        return
+    fi
+
     setup_worktree
 
     # Fetch full conversation
