@@ -55,11 +55,16 @@ check_circuit_breaker() {
 
 # ─── Shared project memory ──────────────────────────────────────
 load_shared_memory() {
-    if [ -n "$AGENT_MEMORY_FILE" ] && [ -f "$AGENT_MEMORY_FILE" ]; then
+    local mem_file="$AGENT_MEMORY_FILE"
+    # Support workspace-relative paths (for committed memory files)
+    if [ -n "$mem_file" ] && [ ! -f "$mem_file" ] && [ -f "${WORKTREE_DIR:-}/$mem_file" ]; then
+        mem_file="$WORKTREE_DIR/$mem_file"
+    fi
+    if [ -n "$mem_file" ] && [ -f "$mem_file" ]; then
         echo "# Shared Project Memory (from interactive sessions)
 The following memory was accumulated from working on this project. Use it for context but do NOT attempt to update memory files — only interactive sessions manage memory.
 
-$(cat "$AGENT_MEMORY_FILE")"
+$(cat "$mem_file")"
     else
         echo ""
     fi
