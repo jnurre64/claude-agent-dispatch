@@ -86,12 +86,22 @@ AGENT_CIRCUIT_BREAKER_LIMIT=8
 
 Path to a shared Claude memory file. If set and the file exists, its contents are appended to the system prompt for every `claude -p` invocation via `--append-system-prompt`. This lets the agent benefit from context accumulated during interactive Claude Code sessions.
 
+Supports two path modes:
+- **Absolute path**: Resolves directly (e.g., `$HOME/.claude/projects/.../memory/MEMORY.md`)
+- **Workspace-relative path**: Resolves against the worktree directory (e.g., `claude-work/shared-memory.md`)
+
+Workspace-relative paths enable **committed memory files** — a curated knowledge file checked into the repository that syncs across machines via git. See the [Customization Guide](customization.md#shared-project-memory) for setup details.
+
 | Key | Default | Type |
 |-----|---------|------|
-| `AGENT_MEMORY_FILE` | *(empty)* | file path |
+| `AGENT_MEMORY_FILE` | *(empty)* | file path (absolute or workspace-relative) |
 
 ```bash
+# Option 1: Machine-local memory (from interactive sessions on this machine)
 AGENT_MEMORY_FILE="$HOME/.claude/projects/-home-user-repos-myproject/memory/MEMORY.md"
+
+# Option 2: Committed memory file (shared across machines via git) — recommended
+AGENT_MEMORY_FILE="claude-work/shared-memory.md"
 ```
 
 The agent reads this file but never writes to it. Only interactive sessions should manage memory content.

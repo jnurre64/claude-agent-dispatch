@@ -250,6 +250,29 @@ _source_common() {
     assert_output --partial "Shared Project Memory"
 }
 
+@test "load_shared_memory: resolves workspace-relative path against WORKTREE_DIR" {
+    local worktree="${TEST_TEMP_DIR}/worktree"
+    mkdir -p "$worktree/claude-work"
+    echo "# Committed Memory" > "$worktree/claude-work/shared-memory.md"
+    export AGENT_MEMORY_FILE="claude-work/shared-memory.md"
+    export WORKTREE_DIR="$worktree"
+    _source_common
+
+    run load_shared_memory
+    assert_output --partial "Committed Memory"
+    assert_output --partial "Shared Project Memory"
+}
+
+@test "load_shared_memory: relative path not in worktree returns empty" {
+    export AGENT_MEMORY_FILE="claude-work/nonexistent.md"
+    export WORKTREE_DIR="${TEST_TEMP_DIR}/empty-worktree"
+    mkdir -p "$WORKTREE_DIR"
+    _source_common
+
+    run load_shared_memory
+    assert_output ""
+}
+
 # ═══════════════════════════════════════════════════════════════
 # validate prompt tests
 # ═══════════════════════════════════════════════════════════════

@@ -182,11 +182,49 @@ AGENT_TEST_COMMAND="npm run lint && npm test"
 
 ### What It Is
 
-`AGENT_MEMORY_FILE` points to a Claude Code memory file — a markdown file that accumulates project knowledge from interactive sessions. When set, its contents are injected into every agent invocation via `--append-system-prompt`.
+`AGENT_MEMORY_FILE` points to a markdown file containing project knowledge that agents should have as context. When set, its contents are injected into every agent invocation via `--append-system-prompt`.
 
-This gives the agent access to patterns, conventions, and context that were discovered during interactive development but are not written in CLAUDE.md.
+This gives the agent access to patterns, conventions, and hard-won lessons that were discovered during interactive development but are not written in CLAUDE.md.
 
-### How to Set It Up
+### Two Approaches
+
+#### Approach 1: Committed Memory File (Recommended)
+
+A curated markdown file checked into the repository. Syncs across all machines via git — human developers on any OS and automated agents all read the same knowledge.
+
+**Best for**: Teams or setups where multiple people/machines work on the same project. Eliminates knowledge isolation between interactive sessions on different machines and automated agent runs.
+
+1. **Create the memory file** in your repository (e.g., `claude-work/shared-memory.md`):
+   ```markdown
+   # Project Memory
+
+   ## Testing Patterns
+   - Use `scene_runner()` for integration tests that need the scene tree
+   - RefCounted classes can be tested without scene tree setup
+   ...
+   ```
+
+2. **Set the config variable** (workspace-relative path):
+   ```bash
+   AGENT_MEMORY_FILE="claude-work/shared-memory.md"
+   ```
+
+3. **Add a CLAUDE.md instruction** telling interactive Claude to suggest updates:
+   ```markdown
+   ### Shared Memory Maintenance
+   When you discover a noteworthy pattern or hard-won lesson during an interactive
+   session, suggest adding it to `claude-work/shared-memory.md`.
+   ```
+
+4. **Curate manually** — review Claude's suggestions, approve and commit what's useful. Never let agents write to this file autonomously.
+
+5. **Initialize from existing memory** — if you already have machine-local auto-memory, compare it with the committed file in your first interactive session and merge relevant entries. Ask Claude: "Compare my local memory with `claude-work/shared-memory.md` and suggest what should be added."
+
+#### Approach 2: Machine-Local Memory
+
+Points to Claude Code's auto-generated memory file on the runner machine. Only contains knowledge from interactive sessions on that specific machine.
+
+**Best for**: Single-machine setups where the same person does interactive development and runs agents.
 
 1. **Locate your project's memory file.** Claude Code stores per-project memory at:
    ```
@@ -197,7 +235,7 @@ This gives the agent access to patterns, conventions, and context that were disc
    ~/.claude/projects/-home-user-repos-my-app/memory/MEMORY.md
    ```
 
-2. **Set the config variable:**
+2. **Set the config variable** (absolute path):
    ```bash
    AGENT_MEMORY_FILE="$HOME/.claude/projects/-home-user-repos-my-app/memory/MEMORY.md"
    ```
@@ -206,9 +244,10 @@ This gives the agent access to patterns, conventions, and context that were disc
 
 ### Important Notes
 
-- The agent reads the memory file but never writes to it. Only interactive Claude Code sessions manage memory content.
+- The agent reads the memory file but **never writes to it**. Only interactive Claude Code sessions (human-supervised) should manage memory content. This prevents context pollution and hallucinated learnings propagation.
 - If the file does not exist or the variable is empty, the memory feature is silently skipped.
 - Memory is wrapped with a header explaining that the agent should use it for context but not attempt to update it.
+- Workspace-relative paths resolve against the agent's worktree directory at runtime.
 
 ---
 
