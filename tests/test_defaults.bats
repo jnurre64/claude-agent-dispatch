@@ -308,3 +308,29 @@ EOF
 
     assert_equal "$AGENT_PROMPT_POST_IMPL_RETRY" ""
 }
+
+# ═══════════════════════════════════════════════════════════════
+# Review gates integration
+# ═══════════════════════════════════════════════════════════════
+
+@test "dispatch script: sources review-gates.sh" {
+    grep -q 'review-gates.sh' "${SCRIPTS_DIR}/agent-dispatch.sh"
+}
+
+@test "dispatch script: handle_implement calls run_adversarial_plan_review" {
+    local implement_section
+    implement_section=$(sed -n '/^handle_implement/,/^handle_direct_implement/p' "${SCRIPTS_DIR}/agent-dispatch.sh")
+
+    echo "$implement_section" | grep -q 'run_adversarial_plan_review'
+}
+
+@test "dispatch script: run_adversarial_plan_review runs BEFORE implementation claude session" {
+    local implement_section
+    implement_section=$(sed -n '/^handle_implement/,/^handle_direct_implement/p' "${SCRIPTS_DIR}/agent-dispatch.sh")
+
+    local review_line impl_line
+    review_line=$(echo "$implement_section" | grep -n 'run_adversarial_plan_review' | head -1 | cut -d: -f1)
+    impl_line=$(echo "$implement_section" | grep -n 'run_claude.*prompt.*impl_tools' | head -1 | cut -d: -f1)
+
+    [ "$review_line" -lt "$impl_line" ]
+}
