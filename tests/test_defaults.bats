@@ -241,3 +241,70 @@ EOF
 
     echo "$reply_section" | grep -q 'handle_direct_implement'
 }
+
+# ═══════════════════════════════════════════════════════════════
+# Adversarial review gate configuration
+# ═══════════════════════════════════════════════════════════════
+
+@test "defaults.sh: AGENT_ADVERSARIAL_PLAN_REVIEW defaults to true" {
+    export AGENT_BOT_USER="test-bot"
+    unset AGENT_ADVERSARIAL_PLAN_REVIEW
+
+    source "${LIB_DIR}/defaults.sh"
+
+    assert_equal "$AGENT_ADVERSARIAL_PLAN_REVIEW" "true"
+}
+
+@test "defaults.sh: AGENT_POST_IMPL_REVIEW defaults to true" {
+    export AGENT_BOT_USER="test-bot"
+    unset AGENT_POST_IMPL_REVIEW
+
+    source "${LIB_DIR}/defaults.sh"
+
+    assert_equal "$AGENT_POST_IMPL_REVIEW" "true"
+}
+
+@test "defaults.sh: AGENT_POST_IMPL_REVIEW_MAX_RETRIES defaults to 1" {
+    export AGENT_BOT_USER="test-bot"
+    unset AGENT_POST_IMPL_REVIEW_MAX_RETRIES
+
+    source "${LIB_DIR}/defaults.sh"
+
+    assert_equal "$AGENT_POST_IMPL_REVIEW_MAX_RETRIES" "1"
+}
+
+@test "defaults.sh: AGENT_MODEL defaults to empty" {
+    export AGENT_BOT_USER="test-bot"
+    unset AGENT_MODEL
+
+    source "${LIB_DIR}/defaults.sh"
+
+    assert_equal "$AGENT_MODEL" ""
+}
+
+@test "defaults.sh: AGENT_PROMPT_ADVERSARIAL_PLAN defaults to empty" {
+    export AGENT_BOT_USER="test-bot"
+    unset AGENT_PROMPT_ADVERSARIAL_PLAN
+
+    source "${LIB_DIR}/defaults.sh"
+
+    assert_equal "$AGENT_PROMPT_ADVERSARIAL_PLAN" ""
+}
+
+@test "defaults.sh: AGENT_PROMPT_POST_IMPL_REVIEW defaults to empty" {
+    export AGENT_BOT_USER="test-bot"
+    unset AGENT_PROMPT_POST_IMPL_REVIEW
+
+    source "${LIB_DIR}/defaults.sh"
+
+    assert_equal "$AGENT_PROMPT_POST_IMPL_REVIEW" ""
+}
+
+@test "defaults.sh: AGENT_PROMPT_POST_IMPL_RETRY defaults to empty" {
+    export AGENT_BOT_USER="test-bot"
+    unset AGENT_PROMPT_POST_IMPL_RETRY
+
+    source "${LIB_DIR}/defaults.sh"
+
+    assert_equal "$AGENT_PROMPT_POST_IMPL_RETRY" ""
+}
