@@ -8,7 +8,6 @@ set -euo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 NC='\033[0m'
 
 MISSING=()
@@ -56,8 +55,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BATS_BIN="${SCRIPT_DIR}/../tests/bats/bin/bats"
 
 if [ -x "$BATS_BIN" ]; then
-    local_version=$("$BATS_BIN" --version 2>&1 | head -1)
-    echo -e "  ${GREEN}✓${NC} bats found: ${local_version}"
+    bats_version=$("$BATS_BIN" --version 2>&1 | head -1)
+    echo -e "  ${GREEN}✓${NC} bats found: ${bats_version}"
 else
     echo -e "  ${RED}✗${NC} bats submodule not initialized — not found"
     MISSING+=("bats")
