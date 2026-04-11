@@ -343,3 +343,48 @@ MOCK
     calls=$(cat "${TEST_TEMP_DIR}/mock_calls_timeout" 2>/dev/null || echo "")
     [[ "$calls" != *"--model"* ]]
 }
+
+# ═══════════════════════════════════════════════════════════════
+# Adversarial review prompt tests
+# ═══════════════════════════════════════════════════════════════
+
+@test "load_prompt: loads default adversarial-plan prompt" {
+    _source_common
+    run load_prompt "adversarial-plan" ""
+    assert_success
+    assert_output --partial "adversarial"
+}
+
+@test "load_prompt: loads custom adversarial-plan prompt from absolute path" {
+    _source_common
+    local prompt_file="${TEST_TEMP_DIR}/custom-adversarial.md"
+    echo "Custom adversarial prompt" > "$prompt_file"
+
+    run load_prompt "adversarial-plan" "$prompt_file"
+    assert_success
+    assert_output "Custom adversarial prompt"
+}
+
+@test "load_prompt: loads default post-impl-review prompt" {
+    _source_common
+    run load_prompt "post-impl-review" ""
+    assert_success
+    assert_output --partial "post-implementation"
+}
+
+@test "load_prompt: loads custom post-impl-review prompt from absolute path" {
+    _source_common
+    local prompt_file="${TEST_TEMP_DIR}/custom-post-impl.md"
+    echo "Custom post-impl review prompt" > "$prompt_file"
+
+    run load_prompt "post-impl-review" "$prompt_file"
+    assert_success
+    assert_output "Custom post-impl review prompt"
+}
+
+@test "load_prompt: loads default post-impl-retry prompt" {
+    _source_common
+    run load_prompt "post-impl-retry" ""
+    assert_success
+    assert_output --partial "review concerns"
+}
