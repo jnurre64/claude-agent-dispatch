@@ -49,7 +49,7 @@ Run the full test suite:
 
 If Step 1 passed (all prerequisites met), all tests should pass. Any failure is a real regression — investigate it.
 
-If tests fail with errors about `jq`, `shellcheck`, `grep -P`, or `bats`, re-run Step 1 — a prerequisite is missing.
+If tests fail with errors about `jq`, `shellcheck`, or `bats`, re-run Step 1 — a prerequisite is missing.
 
 ## Step 5: Report Summary
 

@@ -13,7 +13,7 @@ parse_config_vars() {
     if [ ! -f "$file" ]; then
         return 0
     fi
-    grep -oP '^\s*#?\s*\KAGENT_[A-Z_]+' "$file" | sort -u
+    sed -nE 's/^[[:space:]]*#?[[:space:]]*(AGENT_[A-Z_]+).*/\1/p' "$file" | sort -u
 }
 
 # parse_config_vars_with_context <file>
