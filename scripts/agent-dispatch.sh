@@ -313,11 +313,13 @@ handle_issue_reply() {
     claude_output=$(parse_claude_output "$result")
 
     local triage_json action
+    set +e
     triage_json=$(echo "$claude_output" | grep -oE '[{][^{}]*"action"[^{}]*[}]' | tail -1)
     if [ -z "$triage_json" ]; then
         triage_json="$claude_output"
     fi
     action=$(echo "$triage_json" | jq -r '.action // empty' 2>/dev/null || echo "")
+    set -e
 
     if [ "$action" = "ask_questions" ]; then
         local questions
