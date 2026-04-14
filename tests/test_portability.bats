@@ -5,7 +5,7 @@
 load 'helpers/test_helper'
 
 # shellcheck disable=SC2154
-@test "portability: no owned shell file uses grep -P (non-portable PCRE mode)" {
+@test "portability: no owned shell file uses PCRE grep flag" {
     local repo_root
     repo_root="$(cd "${SCRIPTS_DIR}/.." && pwd)"
 
@@ -21,14 +21,13 @@ load 'helpers/test_helper'
     matches=$(grep -rnE 'grep[[:space:]]+-[a-zA-Z]*P' \
         "${repo_root}/scripts" \
         "${repo_root}/discord-bot" \
-        "${repo_root}/tests"/*.bats 2>/dev/null \
-        | grep -v 'test_portability\.bats' || true)
+        "${repo_root}/tests"/*.bats 2>/dev/null || true)
 
     if [ -n "$matches" ]; then
-        echo "Found non-portable 'grep -P' usage:" >&2
+        echo "Found non-portable PCRE grep flag usage:" >&2
         echo "$matches" >&2
         echo "" >&2
-        echo "grep -P (PCRE) fails on non-UTF-8 locales (Windows Git Bash default)." >&2
+        echo "The PCRE flag (-P) fails on non-UTF-8 locales (Windows Git Bash default)." >&2
         echo "Rewrite with grep -E, sed -nE, or bash [[ =~ ]]." >&2
         false
     fi
