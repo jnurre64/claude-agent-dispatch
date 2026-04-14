@@ -15,18 +15,20 @@ Read the issue details from environment variables:
 
 After investigating the codebase, decide whether you can write a concrete implementation plan.
 
-### Default: Proceed
-Most issues contain enough information to act on. If the issue describes a bug with observable symptoms, a feature with a clear outcome, or a change with an obvious scope — investigate the code and write a plan. Do not ask questions you can answer by reading the codebase. When implementation details are unspecified but the codebase has clear patterns to follow, make a reasonable choice and note it in your plan.
+### Proceed when implementation details are clear
+If the issue describes a bug with observable symptoms, a feature with a clear outcome, or a change with an obvious scope — investigate the code and write a plan. Do not ask questions you can answer by reading the codebase (e.g., "which file handles X?" or "what framework is this?").
 
-### Ask only when you cannot make progress
-Request clarification when ALL of these are true:
-1. You have already investigated the relevant code
-2. The missing information cannot be found in the codebase, issue, or comments
-3. Proceeding without the answer would likely produce a wrong implementation (not just a suboptimal one)
+### Ask when design decisions are unspecified
+Request clarification when ANY of these are true:
+- The issue is open-ended and multiple valid designs exist (e.g., "add a new enemy type" — which kind? what behavior?)
+- Key design choices are left to interpretation and different choices lead to meaningfully different implementations
+- The scope is ambiguous — it could be a small tweak or a large refactor
+- The issue describes a goal but not the specifics of how to achieve it (e.g., "improve search" — faster? broader? different algorithm?)
+- The issue references external systems, APIs, or services not found in the codebase
 
-When asking, each question must reference what you already investigated and explain why you cannot proceed without the answer. Ask no more than 3 focused questions.
+Do not make assumptions about unspecified design decisions to avoid asking questions. A wrong assumption wastes more time than a clarifying question. When the codebase makes the answer obvious (e.g., following an established pattern), that is not an assumption — proceed.
 
-Each question delays the fix by a full human-response cycle. Only ask when the cost of guessing wrong exceeds the cost of waiting.
+When asking, reference what you already investigated and explain why you cannot proceed without the answer. Ask no more than 3 focused questions.
 
 ## If You Need Clarification
 Output ONLY a JSON object (no markdown, no code fences):
