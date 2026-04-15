@@ -335,3 +335,152 @@ async def handle_feedback_submit(ack, body, client, view) -> None:
 
     gh_dispatch(repo, "agent-reply", issue_number)
     log.info("MODAL: %s on %s#%d by %s", action, repo, issue_number, user_id)
+
+
+async def cmd_approve(ack, respond, body, client) -> None:
+    """/agent-approve <issue_number> -- approve a plan."""
+    await ack()
+    user_id = body["user_id"]
+    if not await is_authorized(user_id, client):
+        await respond(text="You don't have permission to perform this action.")
+        return
+
+    text = body.get("text", "").strip()
+    if not text or not text.isdigit():
+        await respond(text="Usage: /agent-approve <issue_number>")
+        return
+
+    issue_number = int(text)
+    repo = DEFAULT_REPO
+
+    ok, err = gh_command([
+        "issue", "edit", str(issue_number), "--repo", repo,
+        "--remove-label", "agent:plan-review", "--add-label", "agent:plan-approved",
+    ])
+    if not ok:
+        await respond(text=f"Failed to approve #{issue_number}: {err}")
+        return
+
+    gh_dispatch(repo, "agent-implement", issue_number)
+    await respond(text=f"Approved #{issue_number} and triggered implementation.")
+    log.info("CMD: approve %s#%d by %s", repo, issue_number, user_id)
+
+
+async def cmd_reject(ack, respond, body, client) -> None:
+    """/agent-reject <issue_number> [reason] -- reject with optional reason."""
+    await ack()
+    user_id = body["user_id"]
+    if not await is_authorized(user_id, client):
+        await respond(text="You don't have permission to perform this action.")
+        return
+
+    text = body.get("text", "").strip()
+    parts = text.split(maxsplit=1)
+    if not parts or not parts[0].isdigit():
+        await respond(text="Usage: /agent-reject <issue_number> [reason]")
+        return
+
+    issue_number = int(parts[0])
+    reason = sanitize_input(parts[1]) if len(parts) > 1 else "Rejected via Slack"
+    repo = DEFAULT_REPO
+
+    ok, err = gh_command(["issue", "comment", str(issue_number), "--repo", repo, "--body", reason])
+    if not ok:
+        await respond(text=f"Failed to reject #{issue_number}: {err}")
+        return
+
+    gh_command([
+        "issue", "edit", str(issue_number), "--repo", repo,
+        "--remove-label", "agent:plan-review", "--add-label", "agent:needs-info",
+    ])
+    gh_dispatch(repo, "agent-reply", issue_number)
+    await respond(text=f"Rejected #{issue_number}: {reason[:100]}")
+    log.info("CMD: reject %s#%d by %s", repo, issue_number, user_id)
+
+
+async def cmd_comment(ack, respond, body, client) -> None:
+    """/agent-comment <issue_number> <text> -- post feedback."""
+    await ack()
+    user_id = body["user_id"]
+    if not await is_authorized(user_id, client):
+        await respond(text="You don't have permission to perform this action.")
+        return
+
+    text = body.get("text", "").strip()
+    parts = text.split(maxsplit=1)
+    if len(parts) < 2 or not parts[0].isdigit():
+        await respond(text="Usage: /agent-comment <issue_number> <text>")
+        return
+
+    issue_number = int(parts[0])
+    comment_text = sanitize_input(parts[1])
+    repo = DEFAULT_REPO
+
+    ok, err = gh_command(["issue", "comment", str(issue_number), "--repo", repo, "--body", comment_text])
+    if not ok:
+        await respond(text=f"Failed to comment on #{issue_number}: {err}")
+        return
+
+    gh_dispatch(repo, "agent-reply", issue_number)
+    await respond(text=f"Comment posted on #{issue_number}.")
+    log.info("CMD: comment %s#%d by %s", repo, issue_number, user_id)
+
+
+async def cmd_status(ack, respond, body, client) -> None:
+    """/agent-status <issue_number> -- check current agent labels."""
+    await ack()
+    user_id = body["user_id"]
+    if not await is_authorized(user_id, client):
+        await respond(text="You don't have permission to perform this action.")
+        return
+
+    text = body.get("text", "").strip()
+    if not text or not text.isdigit():
+        await respond(text="Usage: /agent-status <issue_number>")
+        return
+
+    issue_number = int(text)
+    repo = DEFAULT_REPO
+
+    ok, output = gh_command(["issue", "view", str(issue_number), "--repo", repo, "--json", "labels,title,state"])
+    if not ok:
+        await respond(text=f"Failed to get status for #{issue_number}: {output}")
+        return
+
+    data = json.loads(output)
+    title = data.get("title", "Unknown")
+    state = data.get("state", "unknown")
+    labels = [l["name"] for l in data.get("labels", []) if l["name"].startswith("agent")]
+    status = ", ".join(labels) if labels else "No agent labels"
+
+    await respond(text=f"*#{issue_number}: {title}*\nState: {state}\nAgent labels: {status}")
+    log.info("CMD: status %s#%d by %s", repo, issue_number, user_id)
+
+
+async def cmd_retry(ack, respond, body, client) -> None:
+    """/agent-retry <issue_number> -- re-trigger agent."""
+    await ack()
+    user_id = body["user_id"]
+    if not await is_authorized(user_id, client):
+        await respond(text="You don't have permission to perform this action.")
+        return
+
+    text = body.get("text", "").strip()
+    if not text or not text.isdigit():
+        await respond(text="Usage: /agent-retry <issue_number>")
+        return
+
+    issue_number = int(text)
+    repo = DEFAULT_REPO
+
+    ok, err = gh_command([
+        "issue", "edit", str(issue_number), "--repo", repo,
+        "--remove-label", ",".join(ALL_AGENT_LABELS), "--add-label", "agent",
+    ])
+    if not ok:
+        await respond(text=f"Failed to retry #{issue_number}: {err}")
+        return
+
+    gh_dispatch(repo, "agent-triage", issue_number)
+    await respond(text=f"Retried #{issue_number} -- agent will re-triage.")
+    log.info("CMD: retry %s#%d by %s", repo, issue_number, user_id)
