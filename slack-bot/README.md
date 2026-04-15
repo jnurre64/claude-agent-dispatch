@@ -46,13 +46,14 @@ Interactive Slack bot for managing agent work. Adds buttons, slash commands, and
 | `/agent-status` | Check current agent labels |
 | `/agent-retry` | Re-trigger the agent |
 
-For each: click **"Create New Command"**, enter the command name and a short description, set the Request URL to anything (Socket Mode ignores it, but the field is required -- use `https://localhost`).
+For each: click **"Create New Command"**, enter the command name and a short description. If Slack asks for a Request URL, enter `https://localhost` (Socket Mode ignores it, but the field may be required).
 
 ### 5. Enable Interactivity
 
 1. In the left sidebar, click **"Interactivity & Shortcuts"**
 2. Toggle **Interactivity** to on
-3. Set the Request URL to `https://localhost` (Socket Mode handles routing)
+3. If Slack shows a Request URL field, enter `https://localhost` -- with Socket Mode enabled, Slack typically skips this field entirely
+4. Click **"Save Changes"**
 
 ### 6. Install to Workspace
 
@@ -60,14 +61,30 @@ For each: click **"Create New Command"**, enter the command name and a short des
 2. Click **"Install to Workspace"** and authorize
 3. **Copy the `xoxb-` Bot User OAuth Token**
 
-### 7. Get Your Slack IDs
+### 7. Invite the Bot to Your Channel
+
+The bot must be a member of the notification channel before it can post messages.
+
+In Slack, go to your notification channel and type:
+
+```
+/invite @Pennyworth
+```
+
+Or: click the channel name > **Integrations** > **Add apps** > search for your bot name.
+
+### 8. Get Your Slack IDs
 
 | ID | How to get it |
 |---|---|
 | **Channel ID** | Right-click channel name > View channel details > scroll to bottom |
-| **Your User ID** | Click your profile picture > Profile > three dots menu > Copy member ID |
+| **Your User ID** | Click your profile picture > Profile > three dots menu > Copy member ID. This is **your** user ID, not the bot's -- it controls who is authorized to click action buttons (Approve, Retry, etc.) |
 
-### 8. Configure
+### 9. Configure
+
+Add the Slack settings to your config file. If you already have a `config.env` (e.g., with Discord settings), **append** these lines -- do not overwrite the file.
+
+Open the file directly on your machine:
 
 ```bash
 mkdir -p ~/agent-infra
@@ -77,6 +94,7 @@ nano ~/agent-infra/config.env
 Add:
 
 ```bash
+# Slack Bot
 AGENT_SLACK_BOT_TOKEN="xoxb-your-bot-token"
 AGENT_SLACK_APP_TOKEN="xapp-your-app-token"
 AGENT_SLACK_CHANNEL_ID="C0123456789"
@@ -84,14 +102,20 @@ AGENT_SLACK_ALLOWED_USERS="U0123456789"  # comma-separated for multiple
 AGENT_DISPATCH_REPO="owner/repo"
 ```
 
-### 9. Install and Start
+> **Security note:** Paste tokens directly into the config file on your machine. Do not share tokens via chat, email, or other channels where they could be logged or cached.
+
+### 10. Install and Start
 
 ```bash
 cd slack-bot
 ./install.sh
 ```
 
-When prompted, enter the path to your config (e.g., `/home/youruser/agent-infra/config.env`).
+When prompted, enter the path to your config (e.g., `/home/youruser/agent-infra/config.env`). For non-interactive installs, pass `--config`:
+
+```bash
+./install.sh --config ~/agent-infra/config.env
+```
 
 Then start:
 
@@ -99,7 +123,7 @@ Then start:
 systemctl --user start agent-dispatch-slack
 ```
 
-### 10. Verify
+### 11. Verify
 
 Check the service status:
 
@@ -156,12 +180,22 @@ systemctl --user disable agent-dispatch-slack
 | `/agent-status <issue>` | Check current agent labels |
 | `/agent-retry <issue>` | Re-trigger agent |
 
+## Ports
+
+The Slack bot listens on `127.0.0.1:8676` by default. If you're also running the Discord bot (port 8675), both can run simultaneously without conflict.
+
+To change the Slack bot port, set `AGENT_SLACK_BOT_PORT` in your `config.env`:
+
+```bash
+AGENT_SLACK_BOT_PORT="8677"
+```
+
 ## Troubleshooting
 
 ### Bot connects but no notifications appear
 
 - Check that `AGENT_SLACK_CHANNEL_ID` is set correctly
-- Verify the bot is invited to the channel (if private)
+- Verify the bot is invited to the channel -- type `/invite @YourBotName` in the channel
 - Check the HTTP listener: `curl -s http://127.0.0.1:8676/notify` should not return "connection refused"
 
 ### Buttons don't respond
