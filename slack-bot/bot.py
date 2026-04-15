@@ -484,3 +484,37 @@ async def cmd_retry(ack, respond, body, client) -> None:
     gh_dispatch(repo, "agent-triage", issue_number)
     await respond(text=f"Retried #{issue_number} -- agent will re-triage.")
     log.info("CMD: retry %s#%d by %s", repo, issue_number, user_id)
+
+
+def create_notify_handler(slack_client):
+    """Create an aiohttp handler that sends notifications to Slack."""
+    channel_id = CHANNEL_ID
+
+    async def handle_notify(request: web.Request) -> web.Response:
+        if not channel_id:
+            return web.Response(status=503, text="Channel not configured")
+
+        data = await request.json()
+        event_type = data["event_type"]
+        title = data["title"]
+        url = data["url"]
+        description = data.get("description", "")
+        issue_number = data.get("issue_number", 0)
+        repo = data.get("repo", "")
+
+        blocks = build_blocks(event_type, title, url, description, issue_number, repo)
+        actions = build_actions(event_type, issue_number, url, repo)
+        color = EVENT_COLORS.get(event_type, "#95A5A6")
+
+        indicator = EVENT_INDICATORS.get(event_type, "[INFO]")
+        label = EVENT_LABELS.get(event_type, "Agent Update")
+        fallback_text = f"{indicator} {label} -- #{issue_number}: {title}"
+
+        await slack_client.chat_postMessage(
+            channel=channel_id,
+            text=fallback_text,
+            attachments=[{"color": color, "blocks": blocks + actions}],
+        )
+        return web.Response(text="OK")
+
+    return handle_notify
