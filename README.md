@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/icon.png" width="150" alt="Claude Pal Action">
+  <img src=".github/icon.png" width="600" alt="Claude Pal Action">
 </p>
 <h1 align="center">claude-pal-action</h1>
 
