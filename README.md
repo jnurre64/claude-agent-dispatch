@@ -1,7 +1,6 @@
 <p align="center">
   <img src=".github/icon.png" width="600" alt="Claude Pal Action">
 </p>
-<h1 align="center">claude-pal-action</h1>
 
 <p align="center">
   <a href="https://github.com/jnurre64/claude-pal-action/actions/workflows/ci.yml"><img src="https://github.com/jnurre64/claude-pal-action/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
