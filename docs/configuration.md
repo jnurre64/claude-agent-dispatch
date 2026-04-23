@@ -1,6 +1,6 @@
 # Configuration Reference
 
-This document covers every configuration option in claude-pal-action, how values are loaded, and example configurations for different project types.
+This document covers every configuration option in sandbox-pal-action, how values are loaded, and example configurations for different project types.
 
 ## Config Loading Order
 
@@ -285,7 +285,7 @@ on:
 jobs:
   triage:
     if: github.event.label.name == 'agent' && github.actor != 'my-bot'
-    uses: your-org/claude-pal-action/.github/workflows/sandbox-pal-triage.yml@main
+    uses: your-org/sandbox-pal-action/.github/workflows/sandbox-pal-triage.yml@main
     with:
       bot_user: "my-bot"
       runner_labels: '["self-hosted", "agent"]'

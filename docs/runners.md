@@ -183,7 +183,7 @@ Your caller workflows specify which labels to require:
 ```yaml
 jobs:
   triage:
-    uses: your-org/claude-pal-action/.github/workflows/sandbox-pal-triage.yml@main
+    uses: your-org/sandbox-pal-action/.github/workflows/sandbox-pal-triage.yml@main
     with:
       bot_user: your-bot
       runner_labels: '["self-hosted", "agent"]'

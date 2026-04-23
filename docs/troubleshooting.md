@@ -396,7 +396,7 @@ A syntax error in the workflow file silently prevents it from running. Validate 
 
 ```bash
 # Install actionlint (optional but helpful)
-actionlint .github/workflows/claude-agent.yml
+actionlint .github/workflows/sandbox-pal-dispatch.yml
 ```
 
 Or check the Actions tab in GitHub for any workflow configuration errors.
