@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/icon.png" width="600" alt="Claude Pal Action">
+  <img src=".github/icon.png" width="600" alt="Sandbox Pal Action">
 </p>
 
 <p align="center">
@@ -8,7 +8,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
 </p>
 
-A reusable dispatch system for running [Claude Code](https://claude.com/claude-code) agents on GitHub issues — triaging, planning, implementing, and addressing PR review feedback, all orchestrated through GitHub Actions and a label-driven state machine.
+A reusable dispatch system for running AI coding agents on GitHub issues — triaging, planning, implementing, and addressing PR review feedback, all orchestrated through GitHub Actions and a label-driven state machine.
 
 > **Independent, community-built project.** Not affiliated with, endorsed by, or sponsored by Anthropic, PBC. "Claude" and "Claude Code" are trademarks of Anthropic; this project uses Claude Code as its underlying agent and references these trademarks solely to describe that functionality.
 
