@@ -85,9 +85,9 @@ Button clicks and slash commands translate to `gh` CLI calls -- adding labels, p
 
 1. Agent posts plan -> Discord notification with Approve/Request Changes buttons
 2. You click Request Changes -> modal appears -> you type feedback
-3. Feedback posted as GitHub comment -> triggers dispatch-reply -> agent re-triages
+3. Feedback posted as GitHub comment -> triggers sandbox-pal-reply -> agent re-triages
 4. Updated plan notification -> you click Approve
-5. Label added -> dispatch-implement triggers -> agent implements -> PR notification
+5. Label added -> sandbox-pal-implement triggers -> agent implements -> PR notification
 
 ### Fallback
 
