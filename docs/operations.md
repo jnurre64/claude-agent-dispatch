@@ -10,7 +10,7 @@ All logs are written to the directory specified by `AGENT_LOG_DIR` (default: `~/
 
 | File | Content |
 |------|---------|
-| `agent-dispatch.log` | Main dispatch log. Appended by every run. Contains timestamped entries with event type, issue number, and status messages. |
+| `sandbox-pal-dispatch.log` | Main dispatch log. Appended by every run. Contains timestamped entries with event type, issue number, and status messages. |
 | `claude-stderr-<repo>-<issue>-<timestamp>.log` | Stderr output from each `claude -p` invocation. Empty on success. Contains error details on failure. |
 
 ### Watching Logs in Real Time
@@ -18,7 +18,7 @@ All logs are written to the directory specified by `AGENT_LOG_DIR` (default: `~/
 To follow the dispatch log as the agent works:
 
 ```bash
-tail -f ~/.claude/agent-logs/agent-dispatch.log
+tail -f ~/.claude/agent-logs/sandbox-pal-dispatch.log
 ```
 
 To check the most recent stderr log for a failed run:
@@ -112,7 +112,7 @@ When an issue gets the `agent:failed` label:
 
 1. **Check the dispatch log** for what went wrong:
    ```bash
-   grep "#42" ~/.claude/agent-logs/agent-dispatch.log | tail -20
+   grep "#42" ~/.claude/agent-logs/sandbox-pal-dispatch.log | tail -20
    ```
 
 2. **Check stderr** for Claude-specific errors:

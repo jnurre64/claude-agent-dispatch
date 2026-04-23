@@ -4,7 +4,7 @@
 
 Claude Agent Dispatch is a label-driven system for running Claude Code agents on GitHub issues via GitHub Actions. When a human adds the `agent` label to an issue, the system triages the issue, writes a plan, waits for human approval, implements the plan, creates a PR, and addresses review feedback -- all automatically.
 
-The system runs on self-hosted GitHub Actions runners where Claude Code CLI is installed. A dispatch shell script (`agent-dispatch.sh`) handles event routing, label management, worktree isolation, data pre-fetching, and safety mechanisms. Claude Code runs in headless mode (`claude -p`) with tool restrictions tailored to each phase.
+The system runs on self-hosted GitHub Actions runners where Claude Code CLI is installed. A dispatch shell script (`sandbox-pal-dispatch.sh`) handles event routing, label management, worktree isolation, data pre-fetching, and safety mechanisms. Claude Code runs in headless mode (`claude -p`) with tool restrictions tailored to each phase.
 
 ### Accounts
 
@@ -224,7 +224,7 @@ schedule (cron) or manual dispatch
 
 ## Key Components
 
-### Dispatch Script (`scripts/agent-dispatch.sh`)
+### Dispatch Script (`scripts/sandbox-pal-dispatch.sh`)
 
 The main entry point. Takes three arguments: `<event_type> <repo> <number>`. Sources configuration from `config.env`, loads library modules, and dispatches to the appropriate handler function.
 

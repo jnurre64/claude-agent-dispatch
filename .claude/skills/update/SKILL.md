@@ -1,25 +1,25 @@
 ---
 name: update
-description: Update a standalone agent-dispatch installation from the upstream repository. Shows what changed, handles merges intelligently.
+description: Update a standalone sandbox-pal-dispatch installation from the upstream repository. Shows what changed, handles merges intelligently.
 user-invocable: true
-argument-hint: "[path-to-.agent-dispatch]"
+argument-hint: "[path-to-.sandbox-pal-dispatch]"
 ---
 
 # Update: Sync Standalone Installation with Upstream
 
-Update a standalone agent-dispatch installation by comparing against the latest upstream version and helping the user selectively apply changes.
+Update a standalone sandbox-pal-dispatch installation by comparing against the latest upstream version and helping the user selectively apply changes.
 
 **This skill is for standalone mode only.** Reference mode users get updates automatically via `@v1` tags and `git pull`.
 
 ## Prerequisites
 
-The standalone installation must have a `.agent-dispatch/.upstream` file (created by the setup process). This file tracks which upstream version was last synced and checksums of each file at that time.
+The standalone installation must have a `.sandbox-pal-dispatch/.upstream` file (created by the setup process). This file tracks which upstream version was last synced and checksums of each file at that time.
 
 ## Step 1: Locate the Installation
 
-If the user provided a path argument, use that. Otherwise, look for `.agent-dispatch/` in the current working directory or ask the user where it is.
+If the user provided a path argument, use that. Otherwise, look for `.sandbox-pal-dispatch/` in the current working directory or ask the user where it is.
 
-Read `.agent-dispatch/.upstream` to get:
+Read `.sandbox-pal-dispatch/.upstream` to get:
 - `repo` — the upstream repo URL
 - `version` — the commit SHA or tag last synced from
 - `checksums` — SHA256 of each file at last sync time
@@ -68,7 +68,7 @@ Show the user a table of all files and their categories. Example:
 Update Summary (v1.0.0 → v1.2.0):
 
   Auto-update (safe to overwrite):
-    scripts/agent-dispatch.sh
+    scripts/sandbox-pal-dispatch.sh
     scripts/lib/common.sh
 
   Needs review (both sides changed):
@@ -106,7 +106,7 @@ For each new upstream file, show its contents and ask if the user wants to add i
 
 ## Step 6: Detect New Workflow Templates
 
-Step 5 handles new files within `.agent-dispatch/`. This step handles workflow templates that need to be installed to `.github/workflows/` with bot username substitution — a separate concern.
+Step 5 handles new files within `.sandbox-pal-dispatch/`. This step handles workflow templates that need to be installed to `.github/workflows/` with bot username substitution — a separate concern.
 
 Check whether upstream has added any new workflow templates that the user's repo doesn't have yet.
 
@@ -130,7 +130,7 @@ For each new template:
      sandbox-pal-direct-implement.yml — "Claude Agent: Direct Implement" (triggers on issues labeled)
    ```
 
-2. **Confirm bot username (first template only):** Read `AGENT_BOT_USER` from `.agent-dispatch/config.defaults.env`. If it is empty or not set, also check `.agent-dispatch/config.env` (if it exists). If still not found, ask the user to provide the bot username. Ask the user to confirm: "I'll substitute `<bot-username>` for the bot user in the workflow — does that look right?" Reuse the confirmed value for all subsequent templates without re-asking.
+2. **Confirm bot username (first template only):** Read `AGENT_BOT_USER` from `.sandbox-pal-dispatch/config.defaults.env`. If it is empty or not set, also check `.sandbox-pal-dispatch/config.env` (if it exists). If still not found, ask the user to provide the bot username. Ask the user to confirm: "I'll substitute `<bot-username>` for the bot user in the workflow — does that look right?" Reuse the confirmed value for all subsequent templates without re-asking.
 
 3. **Show the generated workflow:** Read the template, replace all `{{BOT_USER}}` occurrences with the confirmed bot username, and show the result to the user.
 
@@ -142,7 +142,7 @@ For each new template:
 
 ## Step 7: Update Tracking
 
-After applying changes, update `.agent-dispatch/.upstream`:
+After applying changes, update `.sandbox-pal-dispatch/.upstream`:
 - Set `version` to the latest upstream commit SHA
 - Recompute checksums for all files (both updated and unchanged)
 
@@ -154,18 +154,18 @@ Tell the user:
 - How many files were updated, skipped, and merged
 - How many new workflow templates were installed (if any)
 - If any manual review items remain
-- Remind them to commit the changes: `git add .agent-dispatch/ .github/workflows/ && git commit -m "Update agent-dispatch from upstream"`
+- Remind them to commit the changes: `git add .sandbox-pal-dispatch/ .github/workflows/ && git commit -m "Update sandbox-pal-dispatch from upstream"`
 
-## File Format: .agent-dispatch/.upstream
+## File Format: .sandbox-pal-dispatch/.upstream
 
 ```yaml
-# Upstream tracking for standalone agent-dispatch installation
+# Upstream tracking for standalone sandbox-pal-dispatch installation
 # Do not edit manually — managed by /update skill and setup.sh
 repo: https://github.com/jnurre64/claude-pal-action.git
 version: abc123def456  # commit SHA of last sync
 synced_at: "2026-03-21T01:00:00Z"
 checksums:
-  scripts/agent-dispatch.sh: "sha256:abc..."
+  scripts/sandbox-pal-dispatch.sh: "sha256:abc..."
   scripts/lib/common.sh: "sha256:def..."
   scripts/lib/worktree.sh: "sha256:ghi..."
   scripts/lib/data-fetch.sh: "sha256:jkl..."

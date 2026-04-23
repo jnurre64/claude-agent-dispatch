@@ -20,7 +20,7 @@ These are the things governed by SemVer — changes to any of these determine wh
 - Label names and the state machine transitions
 - Workflow inputs and outputs (the `workflow_call` interface)
 - Prompt output format conventions (JSON action fields)
-- CLI arguments to `agent-dispatch.sh` and `cleanup.sh`
+- CLI arguments to `sandbox-pal-dispatch.sh` and `cleanup.sh`
 - Environment variables consumed or exported by the dispatch scripts
 
 Internal implementation details (function names, log format, file paths within scripts) are NOT part of the public interface and can change freely.

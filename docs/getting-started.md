@@ -132,7 +132,7 @@ claude-pal-action supports two modes. Choose based on your needs:
 
 ### Standalone mode (recommended)
 
-All scripts, prompts, and workflow files are copied directly into your target repo under `.agent-dispatch/`. No external dependency.
+All scripts, prompts, and workflow files are copied directly into your target repo under `.sandbox-pal-dispatch/`. No external dependency.
 
 **Pros:**
 - Full control over every file -- customize freely
@@ -260,10 +260,10 @@ git commit -m "Add claude-pal-action workflow files"
 git push
 ```
 
-For standalone mode, also commit the `.agent-dispatch/` directory:
+For standalone mode, also commit the `.sandbox-pal-dispatch/` directory:
 
 ```bash
-git add .agent-dispatch/
+git add .sandbox-pal-dispatch/
 git add .github/workflows/agent-*.yml
 git commit -m "Add claude-pal-action (standalone mode)"
 git push

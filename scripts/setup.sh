@@ -107,7 +107,7 @@ echo -e "${BOLD}Step 3: Generating configuration${NC}"
 if [ "$SETUP_MODE" = "1" ]; then
     CONFIG_FILE="$REPO_ROOT/config.env"
 else
-    CONFIG_DIR="$TARGET_REPO_PATH/.agent-dispatch"
+    CONFIG_DIR="$TARGET_REPO_PATH/.sandbox-pal-dispatch"
     mkdir -p "$CONFIG_DIR"
     CONFIG_FILE="$CONFIG_DIR/config.env"
 fi
@@ -131,11 +131,11 @@ echo -e "  ${GREEN}✓${NC} config.env written to $CONFIG_FILE"
 
 # ── Step 3b (standalone): Copy scripts, lib, and prompts ─────────
 if [ "$SETUP_MODE" = "2" ]; then
-    AGENT_DIR="$TARGET_REPO_PATH/.agent-dispatch"
+    AGENT_DIR="$TARGET_REPO_PATH/.sandbox-pal-dispatch"
 
     echo "  Copying scripts..."
     mkdir -p "$AGENT_DIR/scripts/lib"
-    cp "$REPO_ROOT/scripts/agent-dispatch.sh" "$AGENT_DIR/scripts/"
+    cp "$REPO_ROOT/scripts/sandbox-pal-dispatch.sh" "$AGENT_DIR/scripts/"
     cp "$REPO_ROOT/scripts/cleanup.sh" "$AGENT_DIR/scripts/"
     cp "$REPO_ROOT/scripts/check-prereqs.sh" "$AGENT_DIR/scripts/"
     cp "$REPO_ROOT/scripts/create-labels.sh" "$AGENT_DIR/scripts/"
@@ -156,7 +156,7 @@ if [ "$SETUP_MODE" = "2" ]; then
     echo "  Writing version tracking..."
     CURRENT_SHA=$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo "unknown")
     {
-        echo "# Upstream tracking for standalone agent-dispatch installation"
+        echo "# Upstream tracking for standalone sandbox-pal-dispatch installation"
         echo "# Do not edit manually — managed by /update skill and setup.sh"
         echo "repo: https://github.com/jnurre64/claude-pal-action.git"
         echo "version: $CURRENT_SHA"
@@ -305,9 +305,9 @@ else
     echo "Mode: Standalone (all files copied into your repo)"
     echo ""
     echo "Created in $TARGET_REPO_PATH:"
-    echo -e "  ${GREEN}✓${NC} .agent-dispatch/scripts/    — dispatch and utility scripts"
-    echo -e "  ${GREEN}✓${NC} .agent-dispatch/prompts/    — default agent prompts"
-    echo -e "  ${GREEN}✓${NC} .agent-dispatch/config.env  — project configuration"
+    echo -e "  ${GREEN}✓${NC} .sandbox-pal-dispatch/scripts/    — dispatch and utility scripts"
+    echo -e "  ${GREEN}✓${NC} .sandbox-pal-dispatch/prompts/    — default agent prompts"
+    echo -e "  ${GREEN}✓${NC} .sandbox-pal-dispatch/config.env  — project configuration"
     echo -e "  ${GREEN}✓${NC} .github/workflows/          — workflow files"
 fi
 

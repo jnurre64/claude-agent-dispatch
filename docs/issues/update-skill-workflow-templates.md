@@ -23,12 +23,12 @@ This is error-prone — the user has to know which templates are new, understand
 
 - Standalone workflow templates live in `.claude/skills/setup/templates/standalone/` in the upstream repo
 - During **initial setup** (`/setup` or `setup.sh`), these templates are processed (bot username substituted) and placed in the consuming repo's `.github/workflows/`
-- During **updates** (`/update`), only files under `.agent-dispatch/` (scripts, prompts, labels.txt) are tracked and synced — workflow files in `.github/workflows/` are not part of the update scope
-- The `.upstream` tracking file only has checksums for `.agent-dispatch/` contents
+- During **updates** (`/update`), only files under `.sandbox-pal-dispatch/` (scripts, prompts, labels.txt) are tracked and synced — workflow files in `.github/workflows/` are not part of the update scope
+- The `.upstream` tracking file only has checksums for `.sandbox-pal-dispatch/` contents
 
 ## Proposed Enhancement
 
-During the update flow, after categorizing `.agent-dispatch/` files:
+During the update flow, after categorizing `.sandbox-pal-dispatch/` files:
 
 1. **Scan upstream templates**: List all files in `.claude/skills/setup/templates/standalone/`
 2. **Compare against installed workflows**: Check which templates have corresponding workflow files in the consuming repo's `.github/workflows/`
@@ -56,7 +56,7 @@ So the match is straightforward — strip the `standalone/` prefix and check if 
 
 ## Alternatives Considered
 
-- **Track workflows in `.upstream`**: Would allow full checksum-based update logic for workflows, but breaks the current clean separation where `.agent-dispatch/` is the only managed directory
+- **Track workflows in `.upstream`**: Would allow full checksum-based update logic for workflows, but breaks the current clean separation where `.sandbox-pal-dispatch/` is the only managed directory
 - **Require re-running `/setup`**: Works but heavy-handed — setup asks many questions that are already answered
 - **Documentation only**: Just document "check for new templates after update" — unreliable, easy to forget
 

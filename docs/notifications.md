@@ -74,7 +74,7 @@ The Discord bot adds interactive buttons and slash commands on top of webhook no
 
    ```bash
    cd discord-bot && ./install.sh
-   systemctl --user start agent-dispatch-bot
+   systemctl --user start sandbox-pal-dispatch-bot
    ```
 
 ### How It Works
@@ -118,7 +118,7 @@ The Slack bot provides the same interactive experience as the Discord bot but in
 
    ```bash
    cd slack-bot && ./install.sh
-   systemctl --user start agent-dispatch-slack
+   systemctl --user start sandbox-pal-dispatch-slack
    ```
 
 ### Dual-Channel Mode

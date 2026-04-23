@@ -308,10 +308,10 @@ In standalone mode (where you have copied the scripts into your own infrastructu
 Edit `handle_post_implementation()` in `scripts/lib/common.sh` to add steps after the PR is created.
 
 **Changing the branch naming convention** — the default is `agent/issue-<N>`:
-Edit the `BRANCH_NAME` assignment in `scripts/agent-dispatch.sh`.
+Edit the `BRANCH_NAME` assignment in `scripts/sandbox-pal-dispatch.sh`.
 
 **Adding a pre-triage check** — skip certain issues automatically:
-Add logic at the top of `handle_new_issue()` in `scripts/agent-dispatch.sh`.
+Add logic at the top of `handle_new_issue()` in `scripts/sandbox-pal-dispatch.sh`.
 
 **Changing the PR template** — customize the PR body:
 Edit the `gh pr create` call in `handle_post_implementation()` in `scripts/lib/common.sh`.

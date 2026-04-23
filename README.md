@@ -96,7 +96,7 @@ Both options will:
 
 | Mode | How it works | Best for |
 |------|-------------|----------|
-| **Standalone** (recommended) | All scripts, prompts, and workflows copied into your repo under `.agent-dispatch/` | Most users — full control, per-repo isolation |
+| **Standalone** (recommended) | All scripts, prompts, and workflows copied into your repo under `.sandbox-pal-dispatch/` | Most users — full control, per-repo isolation |
 | **Reference** | Thin workflow files in your repo call reusable workflows from this repo via `@v1` tags | Advanced users who want automatic updates |
 
 ### Test It
@@ -105,7 +105,7 @@ After setup, create a test issue on your repo and add the `agent` label. Watch t
 
 ## Configuration
 
-All settings live in `config.env` (or `.agent-dispatch/config.env` for standalone mode). Key options:
+All settings live in `config.env` (or `.sandbox-pal-dispatch/config.env` for standalone mode). Key options:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -146,7 +146,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions, testing, and how to subm
 ```
 claude-pal-action/
 ├── scripts/
-│   ├── agent-dispatch.sh        # Main dispatch entry point
+│   ├── sandbox-pal-dispatch.sh        # Main dispatch entry point
 │   ├── cleanup.sh               # Scheduled cleanup (branches, gists, logs)
 │   ├── setup.sh                 # Interactive setup wizard
 │   ├── check-prereqs.sh         # Prerequisite validation

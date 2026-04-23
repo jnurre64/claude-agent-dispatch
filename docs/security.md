@@ -228,7 +228,7 @@ Set an expiry date on the PAT and rotate it before expiry. Update the GitHub Act
 ### Monitor Agent Activity
 
 Regularly review:
-- Agent log files on the runner (`~/.claude/agent-logs/agent-dispatch.log`)
+- Agent log files on the runner (`~/.claude/agent-logs/sandbox-pal-dispatch.log`)
 - GitHub Actions workflow run history
 - Issues and PRs created by the bot account
 - Circuit breaker activations (search for `agent:failed` labels)

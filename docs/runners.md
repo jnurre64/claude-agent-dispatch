@@ -299,7 +299,7 @@ journalctl -u actions.runner.your-org.AGENT-1.service -f
 Check agent dispatch logs:
 
 ```bash
-tail -f ~/.claude/agent-logs/agent-dispatch.log
+tail -f ~/.claude/agent-logs/sandbox-pal-dispatch.log
 ```
 
 List recent Claude stderr logs (non-empty files indicate errors):
