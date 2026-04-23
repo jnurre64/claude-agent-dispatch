@@ -91,11 +91,11 @@ Each reusable workflow uses a concurrency group keyed by workflow type and issue
 
 ```yaml
 concurrency:
-  group: claude-agent-triage-${{ github.event.issue.number }}
+  group: sandbox-pal-triage-${{ github.event.issue.number }}
   cancel-in-progress: false
 ```
 
-Groups are workflow-specific (e.g., `claude-agent-triage-96`, `claude-agent-implement-96`) so that label changes during a run don't cause other workflows to compete in the same group. `cancel-in-progress: false` means concurrent jobs for the same workflow and issue are queued, not cancelled.
+Groups are workflow-specific (e.g., `sandbox-pal-triage-96`, `sandbox-pal-implement-96`) so that label changes during a run don't cause other workflows to compete in the same group. `cancel-in-progress: false` means concurrent jobs for the same workflow and issue are queued, not cancelled.
 
 ### Environment Variable Injection
 
