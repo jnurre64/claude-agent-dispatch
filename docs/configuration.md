@@ -263,7 +263,7 @@ Two types of logs are written here:
 
 ## Reusable Workflow Inputs
 
-The reusable workflows (`dispatch-triage.yml`, `dispatch-implement.yml`, `dispatch-reply.yml`, `dispatch-review.yml`, `dispatch-direct-implement.yml`) accept these inputs when called from your project's workflow:
+The reusable workflows (`sandbox-pal-triage.yml`, `sandbox-pal-implement.yml`, `sandbox-pal-reply.yml`, `sandbox-pal-review.yml`, `sandbox-pal-direct-implement.yml`) accept these inputs when called from your project's workflow:
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
@@ -285,7 +285,7 @@ on:
 jobs:
   triage:
     if: github.event.label.name == 'agent' && github.actor != 'my-bot'
-    uses: your-org/claude-pal-action/.github/workflows/dispatch-triage.yml@main
+    uses: your-org/claude-pal-action/.github/workflows/sandbox-pal-triage.yml@main
     with:
       bot_user: "my-bot"
       runner_labels: '["self-hosted", "agent"]'

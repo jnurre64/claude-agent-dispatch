@@ -259,10 +259,10 @@ if [ -n "$WORKFLOWS_DIR" ]; then
     for template in "$TEMPLATES_DIR"/*.yml; do
         filename=$(basename "$template")
         # Replace the template prefix with the chosen prefix
-        # caller-triage.yml → <prefix>-triage.yml  (reference mode)
-        # agent-triage.yml → <prefix>-triage.yml   (standalone mode)
+        # caller-triage.yml → <prefix>-triage.yml       (reference mode)
+        # sandbox-pal-triage.yml → <prefix>-triage.yml  (standalone mode)
         base_name="${filename#caller-}"
-        base_name="${base_name#agent-}"
+        base_name="${base_name#sandbox-pal-}"
         output_name="${WORKFLOW_PREFIX}-${base_name}"
         sed "s/{{BOT_USER}}/$BOT_USER/g" "$template" > "$WORKFLOWS_DIR/$output_name"
         echo -e "  ${GREEN}✓${NC} $output_name"

@@ -113,7 +113,7 @@ Check whether upstream has added any new workflow templates that the user's repo
 ### Scan for new templates
 
 1. List all `.yml` files in the upstream clone's `.claude/skills/setup/templates/standalone/` directory.
-2. For each template file (e.g., `agent-direct-implement.yml`), check if `.github/workflows/<same-filename>` exists in the user's repo.
+2. For each template file (e.g., `sandbox-pal-direct-implement.yml`), check if `.github/workflows/<same-filename>` exists in the user's repo.
 3. Collect any templates that don't have a matching installed workflow — these are new.
 
 ### If no new templates found
@@ -127,7 +127,7 @@ For each new template:
 1. **Describe it:** Read the template's `name:` field and `on:` trigger to give the user a one-line summary. Example:
    ```
    New workflow template available:
-     agent-direct-implement.yml — "Claude Agent: Direct Implement" (triggers on issues labeled)
+     sandbox-pal-direct-implement.yml — "Claude Agent: Direct Implement" (triggers on issues labeled)
    ```
 
 2. **Confirm bot username (first template only):** Read `AGENT_BOT_USER` from `.agent-dispatch/config.defaults.env`. If it is empty or not set, also check `.agent-dispatch/config.env` (if it exists). If still not found, ask the user to provide the bot username. Ask the user to confirm: "I'll substitute `<bot-username>` for the bot user in the workflow — does that look right?" Reuse the confirmed value for all subsequent templates without re-asking.

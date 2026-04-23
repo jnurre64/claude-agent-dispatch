@@ -231,13 +231,13 @@ Or, if you cloned the repository to a different path, pull there. The `dispatch_
 You can pin to a specific tag or commit in your calling workflow to avoid unexpected changes:
 
 ```yaml
-uses: your-org/claude-pal-action/.github/workflows/dispatch-triage.yml@v1.0.0
+uses: your-org/claude-pal-action/.github/workflows/sandbox-pal-triage.yml@v1.0.0
 ```
 
 Or pin to a commit SHA:
 
 ```yaml
-uses: your-org/claude-pal-action/.github/workflows/dispatch-triage.yml@abc1234
+uses: your-org/claude-pal-action/.github/workflows/sandbox-pal-triage.yml@abc1234
 ```
 
 This ensures the dispatch scripts and prompts do not change until you explicitly update the reference.

@@ -131,7 +131,7 @@ Read each template in this skill's `templates/` directory (the `caller-*.yml` fi
 
 ### Standalone mode
 Read each template in `templates/standalone/`:
-- `agent-triage.yml`, `agent-implement.yml`, `agent-reply.yml`, `agent-review.yml`, `agent-cleanup.yml`
+- `sandbox-pal-triage.yml`, `sandbox-pal-implement.yml`, `sandbox-pal-reply.yml`, `sandbox-pal-review.yml`, `sandbox-pal-cleanup.yml`
 
 For each template:
 1. Replace `{{BOT_USER}}` with the bot username from Step 2
@@ -145,7 +145,7 @@ Ask the user where their target repo is cloned locally so you can write the file
 If the user has set up the Discord bot (see `docs/notifications.md`), also deploy the dispatch template:
 
 - **Reference mode:** `caller-dispatch.yml`
-- **Standalone mode:** `agent-dispatch.yml` (from `templates/standalone/`)
+- **Standalone mode:** `sandbox-pal-dispatch.yml` (from `templates/standalone/`)
 
 This template enables the Discord bot's Approve, Retry, Comment, and Request Changes actions to trigger agent workflows. It is only needed if the Discord bot is in use.
 

@@ -89,15 +89,15 @@ All agent labels:
 
 ## Event Triggers
 
-The system uses four reusable GitHub Actions workflows (`dispatch-*.yml`) that your repository calls via `workflow_call`. Each responds to a different GitHub event.
+The system uses four reusable GitHub Actions workflows (`sandbox-pal-*.yml`) that your repository calls via `workflow_call`. Each responds to a different GitHub event.
 
 | Event | Trigger | Reusable Workflow | Filter (in your caller workflow) |
 |-------|---------|-------------------|----------------------------------|
-| `issues.labeled` | `agent` label added | `dispatch-triage.yml` | Label is `agent`, actor != `your-bot` |
-| `issues.labeled` | `agent:plan-approved` label added | `dispatch-implement.yml` | Label is `agent:plan-approved`, actor != `your-bot` |
-| `issue_comment.created` | Human replies on issue | `dispatch-reply.yml` | Issue has `agent:needs-info` label, commenter != `your-bot` |
-| `issues.labeled` | `agent:implement` label added | `dispatch-direct-implement.yml` | Label is `agent:implement`, actor != `your-bot` |
-| `pull_request_review.submitted` | Review with changes requested | `dispatch-review.yml` | State is `changes_requested`, reviewer != `your-bot` |
+| `issues.labeled` | `agent` label added | `sandbox-pal-triage.yml` | Label is `agent`, actor != `your-bot` |
+| `issues.labeled` | `agent:plan-approved` label added | `sandbox-pal-implement.yml` | Label is `agent:plan-approved`, actor != `your-bot` |
+| `issue_comment.created` | Human replies on issue | `sandbox-pal-reply.yml` | Issue has `agent:needs-info` label, commenter != `your-bot` |
+| `issues.labeled` | `agent:implement` label added | `sandbox-pal-direct-implement.yml` | Label is `agent:implement`, actor != `your-bot` |
+| `pull_request_review.submitted` | Review with changes requested | `sandbox-pal-review.yml` | State is `changes_requested`, reviewer != `your-bot` |
 
 The actor/commenter/reviewer filters are critical -- without them, the bot's own actions would re-trigger workflows in an infinite loop.
 

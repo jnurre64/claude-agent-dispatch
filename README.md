@@ -163,12 +163,12 @@ claude-pal-action/
 │   ├── review.md                # Default PR review prompt
 │   └── validate.md              # Default plan validation prompt
 ├── .github/workflows/
-│   ├── dispatch-triage.yml      # Reusable workflow: issue triage
-│   ├── dispatch-direct-implement.yml  # Reusable workflow: direct implement (skip triage)
-│   ├── dispatch-implement.yml   # Reusable workflow: plan implementation
-│   ├── dispatch-reply.yml       # Reusable workflow: reply handling
-│   ├── dispatch-review.yml      # Reusable workflow: PR review
-│   ├── cleanup.yml              # Reusable workflow: scheduled cleanup
+│   ├── sandbox-pal-triage.yml      # Reusable workflow: issue triage
+│   ├── sandbox-pal-direct-implement.yml  # Reusable workflow: direct implement (skip triage)
+│   ├── sandbox-pal-implement.yml   # Reusable workflow: plan implementation
+│   ├── sandbox-pal-reply.yml       # Reusable workflow: reply handling
+│   ├── sandbox-pal-review.yml      # Reusable workflow: PR review
+│   ├── sandbox-pal-cleanup.yml     # Reusable workflow: scheduled cleanup
 │   └── ci.yml                   # ShellCheck CI for this repo
 ├── .claude/skills/setup/        # /setup skill for Claude-assisted onboarding
 ├── config.env.example           # Configuration template
