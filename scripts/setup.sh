@@ -2,7 +2,7 @@
 # shellcheck disable=SC1091  # Sourced files are resolved at runtime
 set -euo pipefail
 
-# ─── Interactive setup wizard for claude-pal-action ──────────
+# ─── Interactive setup wizard for sandbox-pal-action ──────────
 # Alternative to the /setup Claude Code skill for users without Claude Code.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -158,7 +158,7 @@ if [ "$SETUP_MODE" = "2" ]; then
     {
         echo "# Upstream tracking for standalone sandbox-pal-dispatch installation"
         echo "# Do not edit manually — managed by /update skill and setup.sh"
-        echo "repo: https://github.com/jnurre64/claude-pal-action.git"
+        echo "repo: https://github.com/jnurre64/sandbox-pal-action.git"
         echo "version: $CURRENT_SHA"
         echo "synced_at: \"$(date -u '+%Y-%m-%dT%H:%M:%SZ')\""
         echo "checksums:"
@@ -234,7 +234,7 @@ if [ ${#CONFLICTS[@]} -gt 0 ]; then
     echo ""
     echo "  Options:"
     echo "    [1] Overwrite existing files"
-    echo "    [2] Use a different prefix (e.g., 'claude-agent' instead of 'agent')"
+    echo "    [2] Use a different prefix (e.g., 'sandbox-pal' instead of 'agent')"
     echo "    [3] Skip workflow generation"
     echo ""
     read -rp "  Choose [1/2/3]: " CONFLICT_CHOICE
@@ -243,7 +243,7 @@ if [ ${#CONFLICTS[@]} -gt 0 ]; then
     case "$CONFLICT_CHOICE" in
         1) ;; # proceed with default prefix
         2)
-            read -rp "  Enter prefix (e.g., 'claude-agent'): " WORKFLOW_PREFIX
+            read -rp "  Enter prefix (e.g., 'sandbox-pal'): " WORKFLOW_PREFIX
             if [ -z "$WORKFLOW_PREFIX" ]; then
                 WORKFLOW_PREFIX="agent"
                 echo -e "  ${YELLOW}!${NC} Empty prefix, using default: agent"
@@ -358,7 +358,7 @@ echo ""
 if [ "$SETUP_MODE" = "1" ]; then
     echo "  7. Clone the upstream repo on the runner and copy config:"
     echo ""
-    echo -e "     ${CYAN}git clone https://github.com/jnurre64/claude-pal-action.git ~/agent-infra${NC}"
+    echo -e "     ${CYAN}git clone https://github.com/jnurre64/sandbox-pal-action.git ~/agent-infra${NC}"
     echo -e "     ${CYAN}cp $CONFIG_FILE ~/agent-infra/config.env${NC}"
     echo ""
     echo "  8. Commit and push the workflow files to $TARGET_REPO"
