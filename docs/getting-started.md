@@ -255,7 +255,7 @@ If setup generated workflow files locally, commit and push them to your target r
 
 ```bash
 cd /path/to/your-repo
-git add .github/workflows/agent-*.yml
+git add .github/workflows/sandbox-pal-*.yml
 git commit -m "Add claude-pal-action workflow files"
 git push
 ```
@@ -264,7 +264,7 @@ For standalone mode, also commit the `.sandbox-pal-dispatch/` directory:
 
 ```bash
 git add .sandbox-pal-dispatch/
-git add .github/workflows/agent-*.yml
+git add .github/workflows/sandbox-pal-*.yml
 git commit -m "Add claude-pal-action (standalone mode)"
 git push
 ```

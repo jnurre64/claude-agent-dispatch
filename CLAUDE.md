@@ -19,7 +19,7 @@ Run `/setup` to configure this toolkit for your project.
 - `scripts/sandbox-pal-dispatch.sh` — Main dispatch entry point, sources `lib/` modules
 - `scripts/lib/` — Modular functions: logging, labels, worktrees, data fetching, defaults
 - `prompts/` — Default agent prompts (triage, implement, reply, review)
-- `.github/workflows/dispatch-*.yml` — Reusable workflows called by consuming repos
+- `.github/workflows/sandbox-pal-*.yml` — Reusable workflows called by consuming repos
 - `config.defaults.env` — Project defaults, committed (see `config.defaults.env.example`)
 - `config.env` — Sensitive overrides, gitignored (see `config.env.example`)
 

@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_NAME="sandbox-pal-dispatch-bot"
 
-echo "=== Agent Dispatch Bot Install ==="
+echo "=== Sandbox Pal Dispatch Bot Install ==="
 
 # Determine config.env path (same logic as sandbox-pal-dispatch.sh)
 DEFAULT_CONFIG="${AGENT_CONFIG:-${HOME}/agent-infra/config.env}"
