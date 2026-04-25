@@ -2,6 +2,8 @@
   <img src=".github/icon.png" width="600" alt="Sandbox Pal Action">
 </p>
 
+<h1 align="center">Sandbox Pal Action</h1>
+
 <p align="center">
   <a href="https://github.com/jnurre64/sandbox-pal-action/actions/workflows/ci.yml"><img src="https://github.com/jnurre64/sandbox-pal-action/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/jnurre64/sandbox-pal-action/releases/latest"><img src="https://img.shields.io/github/v/release/jnurre64/sandbox-pal-action" alt="Latest Release"></a>
