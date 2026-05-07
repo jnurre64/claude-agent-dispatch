@@ -131,6 +131,7 @@ The system adapts to any project through your CLAUDE.md (coding conventions), cu
 | [FAQ](docs/faq.md) | Common questions about safety, privacy, costs, and usage |
 | [Configuration](docs/configuration.md) | All settings and options |
 | [Customization](docs/customization.md) | Prompts, tools, and project-specific setup |
+| [Notifications](docs/notifications.md) | Discord and Slack setup — bots, webhooks, per-repo channel routing |
 | [Operations](docs/operations.md) | Logs, monitoring, retrying failed issues |
 | [Bot Account](docs/bot-account.md) | Creating and configuring the bot GitHub account |
 | [Runners](docs/runners.md) | Self-hosted runner setup |
